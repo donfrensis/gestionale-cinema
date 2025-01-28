@@ -1,0 +1,57 @@
+.
+├── eslint.config.mjs
+├── next.config.ts
+├── next-env.d.ts
+├── next-pwa.d.ts
+├── package.json
+├── package-lock.json
+├── postcss.config.mjs
+├── prisma
+│   └── schema.prisma
+├── project-structure.txt
+├── public
+│   ├── icons
+│   │   ├── file.svg
+│   │   ├── globe.svg
+│   │   ├── icon-192x192.svg
+│   │   ├── icon-512x512.svg
+│   │   ├── next.svg
+│   │   ├── vercel.svg
+│   │   └── window.svg
+│   └── manifest.json
+├── README.md
+├── src
+│   ├── app
+│   │   ├── api
+│   │   │   ├── auth
+│   │   │   ├── cash
+│   │   │   ├── films
+│   │   │   ├── liveticket
+│   │   │   ├── shows
+│   │   │   ├── sumup
+│   │   │   └── users
+│   │   ├── (auth)
+│   │   ├── (dashboard)
+│   │   │   ├── cash
+│   │   │   ├── films
+│   │   │   ├── shows
+│   │   │   └── users
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   ├── (mobile)
+│   │   │   ├── availability
+│   │   │   │   └── page.tsx
+│   │   │   └── layout.tsx
+│   │   └── page.tsx
+│   ├── components
+│   │   ├── auth
+│   │   │   └── LoginForm.tsx
+│   │   └── availability
+│   │       └── AvailabilityCalendar.tsx
+│   ├── lib
+│   └── types
+├── tailwind.config.ts
+└── tsconfig.json
+
+26 directories, 28 files
