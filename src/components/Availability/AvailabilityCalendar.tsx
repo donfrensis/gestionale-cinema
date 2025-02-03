@@ -45,6 +45,7 @@ export default function AvailabilityCalendar() {
       const data = await response.json()
       setShows(data)
     } catch (error) {
+      console.error('Errore nel caricamento degli spettacoli:', error);
       toast({
         variant: "destructive",
         title: "Errore",
@@ -74,6 +75,7 @@ export default function AvailabilityCalendar() {
         description: "Spettacolo assegnato"
       })
     } catch (error) {
+      console.error('Errore nell\'assegnazione dello spettacolo:', error);  // Logghiamo l'errore
       toast({
         variant: "destructive",
         title: "Errore",
@@ -101,6 +103,7 @@ export default function AvailabilityCalendar() {
         description: "Rinuncia registrata"
       })
     } catch (error) {
+      console.error('Errore nella registrazione della rinuncia:', error);  // Logghiamo l'errore
       toast({
         variant: "destructive",
         title: "Errore",
@@ -151,10 +154,10 @@ export default function AvailabilityCalendar() {
                   />
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => handleAssign(show.id)}
+                      onClick={() => show.operator_id ? handleWithdraw(show.id) : handleAssign(show.id)}
                       className="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700"
                     >
-                      Conferma
+                      {show.operator_id ? 'Conferma Rinuncia' : 'Conferma'}
                     </button>
                     <button
                       onClick={() => setActiveShowId(null)}

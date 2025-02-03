@@ -1,5 +1,5 @@
 //  src/app/(mobile)/availability/page.tsx
-import AvailabilityCalendar from '@/components/availability/AvailabilityCalendar'
+import AvailabilityCalendar from '@/components/Availability/AvailabilityCalendar'
 
 export default function AvailabilityPage() {
   return (
