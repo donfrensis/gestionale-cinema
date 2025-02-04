@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 // import { CalendarDays } from 'lucide-react';
-import { EventsTable, CurrentTaskCard, LastHandledCard } from '@/components/Home';
-import type { ShowEvent } from '@/components/Home/types';
+import { ShowsTable, CurrentTaskCard, LastHandledCard } from '@/components/Home';
+import type { Show } from '@/components/Home/types';
 
 type DashboardData = {
-  todayShows: ShowEvent[];  // cambiato da todayEvents
-  currentShow: ShowEvent | null;  // cambiato da currentTask
-  lastHandled: ShowEvent | null;
+  todayShows: Show[];  // cambiato da todayEvents
+  currentShow: Show | null;  // cambiato da currentTask
+  lastHandled: Show | null;
 };
 
 export default function DashboardPage() {
@@ -71,18 +71,18 @@ export default function DashboardPage() {
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="grid gap-8">
         {/* Sezione principale con lo show da gestire */}
-        <CurrentTaskCard event={data.currentShow} />
+        <CurrentTaskCard show={data.currentShow} />
 
         {/* Ultima chiusura a sinistra, lista shows a destra */}
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Colonna sinistra: ultimo show gestito */}
           <div className="lg:col-span-1 hidden">
-            <LastHandledCard event={data.lastHandled} />
+            <LastHandledCard show={data.lastHandled} />
           </div>
 
           {/* Colonna destra: shows programmati */}
           <div className="lg:col-span-2">
-            <EventsTable events={data.todayShows} />
+            <ShowsTable shows={data.todayShows} />
           </div>
         </div>
       </div>

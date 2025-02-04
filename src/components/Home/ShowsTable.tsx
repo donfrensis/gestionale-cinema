@@ -1,10 +1,10 @@
-// src/components/Home/EventsTable.tsx
+// src/components/Home/ShowsTable.tsx
 
 import { Clock, Check, AlertCircle, AlertTriangle } from 'lucide-react';
-import { type EventsTableProps, type ShowEvent } from './types';
+import { type ShowsTableProps, type Show } from './types';
 
-export default function EventsTable({ events }: EventsTableProps) {
- if (!events?.length) {
+export default function ShowsTable({ shows }: ShowsTableProps) {
+ if (!shows?.length) {
    return (
      <div className="bg-white rounded-lg shadow p-4">
        <div className="text-center text-gray-500 text-xs">
@@ -15,12 +15,12 @@ export default function EventsTable({ events }: EventsTableProps) {
  }
 
  // Raggruppa gli eventi per data
- const eventsByDate = events.reduce<Record<string, ShowEvent[]>>((acc, event) => {
-   const eventDate = event.date;
-   if (!acc[eventDate]) {
-     acc[eventDate] = [];
+ const showsByDate = shows.reduce<Record<string, Show[]>>((acc, show) => {
+   const showDate = show.date;
+   if (!acc[showDate]) {
+     acc[showDate] = [];
    }
-   acc[eventDate].push(event);
+   acc[showDate].push(show);
    return acc;
  }, {});
 
@@ -64,23 +64,23 @@ export default function EventsTable({ events }: EventsTableProps) {
            </tr>
          </thead>
          <tbody className="divide-y divide-gray-400">
-           {Object.entries(eventsByDate).map(([date, dayEvents]) => (
-             dayEvents.map((event, eventIndex) => (
-               <tr key={event.id} className="hover:bg-gray-50">
-                 {eventIndex === 0 && (
-                   <td className="pr-4 text-xs font-medium text-gray-500" rowSpan={dayEvents.length}>
+           {Object.entries(showsByDate).map(([date, dayShows]) => (
+             dayShows.map((show, showIndex) => (
+               <tr key={show.id} className="hover:bg-gray-50">
+                 {showIndex === 0 && (
+                   <td className="pr-4 text-xs font-medium text-gray-500" rowSpan={dayShows.length}>
                      {formatDate(date)}
                    </td>
                  )}
                  <td className="py-1 px-4 text-xs whitespace-nowrap">
-                   {new Date(event.time).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                   {new Date(show.time).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                  </td>
                  <td className="py-1 px-4 text-xs whitespace-nowrap">
-                   {event.film_title}
+                   {show.film_title}
                  </td>
                  <td className="py-1 px-4 text-xs text-gray-500 whitespace-nowrap">
-                   {event.operator_name ? (
-                     <>{event.operator_name}</>
+                   {show.operator_name ? (
+                     <>{show.operator_name}</>
                    ) : (
                      <span className="text-red-600">
                        <AlertTriangle className="inline h-3 w-3" />
@@ -88,12 +88,12 @@ export default function EventsTable({ events }: EventsTableProps) {
                    )}
                  </td>
                  <td className="py-1 pl-4 text-right whitespace-nowrap">
-                   {event.is_closed ? (
+                   {show.is_closed ? (
                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                        <Check className="h-3 w-3 mr-0.5" />
                        Chiusa
                      </span>
-                   ) : event.report_id ? (
+                   ) : show.report_id ? (
                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                        <Clock className="h-3 w-3 mr-0.5" />
                        Aperta

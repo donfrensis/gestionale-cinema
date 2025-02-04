@@ -1,6 +1,6 @@
 //  src/components/Home/types.ts
 
-export type ShowEvent = {
+export type Show = {
   id: number;
   date: string;
   time: string;
@@ -8,7 +8,7 @@ export type ShowEvent = {
   operator_name?: string;
   is_closed: boolean;
   report_id?: number;
-  event_timing?: 'current' | 'next' | 'past';  // Per il timing dell'evento
+  show_timing?: 'current' | 'next' | 'past';  // Per il timing dell'evento
   is_manageable?: boolean;                     // Per ManageCashButton
   // Campi aggiuntivi per LastHandledCard
   closing_total?: number;
@@ -18,15 +18,15 @@ export type ShowEvent = {
   ticket_system_total?: number;
 };
 
-export type EventsTableProps = {
-  events: ShowEvent[];
+export type ShowsTableProps = {
+  shows: Show[];
 };
 
 export type CurrentTaskCardProps = {
-  event?: ShowEvent | null;
+  show?: Show | null;
 };
 
 // Aggiungiamo il tipo per LastHandledCard
 export type LastHandledCardProps = {
-  event?: ShowEvent | null;
+  show?: Show | null;
 };

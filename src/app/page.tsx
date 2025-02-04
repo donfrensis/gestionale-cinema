@@ -2,7 +2,7 @@
 import { getServerSession } from "next-auth/next";
 import { redirect } from 'next/navigation';
 import { authOptions } from "./api/auth/[...nextauth]/route";
-import { EventsTable, CurrentTaskCard, LastHandledCard } from '@/components/Home';
+import { ShowsTable, CurrentTaskCard, LastHandledCard } from '@/components/Home';
 import { prisma } from '@/lib/db';
 
 export default async function HomePage() {
@@ -16,7 +16,7 @@ export default async function HomePage() {
     redirect('/first-access');
   }
 
-  const events = await prisma.show.findMany({
+  const shows = await prisma.show.findMany({
     where: {
       date: {
         gte: new Date(new Date().setHours(0, 0, 0, 0))
@@ -33,26 +33,26 @@ export default async function HomePage() {
     ]
   });
 
-  const formattedEvents = events.map(event => ({
-    id: event.id,
-    date: event.date.toISOString(),
-    time: event.time.toString(),
-    film_title: event.film.title,
-    operator_name: event.operator?.username,
-    is_closed: event.cashReport?.closingDateTime !== null,
-    report_id: event.cashReport?.id
+  const formattedShows = shows.map(show => ({
+    id: show.id,
+    date: show.date.toISOString(),
+    time: show.time.toString(),
+    film_title: show.film.title,
+    operator_name: show.operator?.username,
+    is_closed: show.cashReport?.closingDateTime !== null,
+    report_id: show.cashReport?.id
   }));
 
   return (
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="grid gap-6 md:grid-cols-2">
-        <CurrentTaskCard event={formattedEvents.find(e => 
+        <CurrentTaskCard show={formattedShows.find(e => 
           !e.is_closed && e.operator_name)} />
-        <LastHandledCard event={formattedEvents.find(e => 
+        <LastHandledCard show={formattedShows.find(e => 
           e.is_closed)} />
       </div>
       <div className="mt-6">
-        <EventsTable events={formattedEvents} />
+        <ShowsTable shows={formattedShows} />
       </div>
     </main>
   );
