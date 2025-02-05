@@ -98,10 +98,13 @@ export default async function DashboardPage() {
    time: show.time.toString(),
    film_title: show.film.title,
    operator_name: show.operator?.username,
-   is_closed: show.cashReport?.closingDateTime !== null,
+   is_closed: show.cashReport !== null ? show.cashReport?.closingDateTime !== null : false,
    report_id: show.cashReport?.id,
    is_manageable: show.operator?.username === session.user.username
  }));
+
+  console.log('weekShows:', weekShows);
+  console.log('formattedWeekShows:', formattedWeekShows);
 
  const formattedCurrentShow = currentShow ? {
    id: currentShow.id,
