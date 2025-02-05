@@ -38,10 +38,6 @@ export type CurrentTaskCardProps = {
  show?: Show | null;
 };
 
-export type LastHandledCardProps = {
- show?: Show | null;
-};
-
 export function calculateTotalFromCashJson(cashJson: JsonValue | undefined | null): Decimal {
   if (!cashJson) return new Decimal(0);
   const cash = JSON.parse(cashJson.toString()) as CashBreakdown;
