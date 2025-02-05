@@ -4,7 +4,7 @@
 import { Euro } from 'lucide-react';
 import { Button } from '@/components/ui/button';  // Nota: ora è UI maiuscolo
 import { useRouter } from 'next/navigation';
-import { Show } from '@/components/Home/types';  // Riusiamo il tipo che abbiamo creato
+import { Show } from '@/components/Dashboard/types';  // Riusiamo il tipo che abbiamo creato
 
 interface ManageCashButtonProps {
   show: Show;

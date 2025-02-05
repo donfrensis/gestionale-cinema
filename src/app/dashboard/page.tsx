@@ -1,91 +1,127 @@
-'use client';
+//  src/app/dashboard/page.tsx
+import { getServerSession } from "next-auth/next";
+import { redirect } from 'next/navigation';
+import { authOptions } from "../api/auth/[...nextauth]/route";
+import { ShowsTable, CurrentTaskCard } from '@/components/Dashboard';
+import { prisma } from '@/lib/db';
 
-import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-// import { CalendarDays } from 'lucide-react';
-import { ShowsTable, CurrentTaskCard, LastHandledCard } from '@/components/Home';
-import type { Show } from '@/components/Home/types';
-
-type DashboardData = {
-  todayShows: Show[];  // cambiato da todayEvents
-  currentShow: Show | null;  // cambiato da currentTask
-  lastHandled: Show | null;
+const getTheatricalWeekStart = () => {
+ const today = new Date();
+ const dayOfWeek = today.getDay();
+ const daysToThursday = dayOfWeek >= 4 
+   ? dayOfWeek - 4  // Se siamo tra gio e dom, torniamo indietro al giovedì
+   : dayOfWeek + 3; // Se siamo tra lun e mer, torniamo indietro al giovedì della settimana precedente
+ 
+ const thursday = new Date(today);
+ thursday.setDate(today.getDate() - daysToThursday);
+ thursday.setHours(0, 0, 0, 0);
+ return thursday;
 };
 
-export default function DashboardPage() {
-  const { status } = useSession();
-  const router = useRouter();
-  const [data, setData] = useState<DashboardData>({
-    todayShows: [],  // cambiato
-    currentShow: null,  // cambiato
-    lastHandled: null
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default async function DashboardPage() {
+ const session = await getServerSession(authOptions);
+ 
+ if (!session) {
+   redirect('/login');
+ }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await fetch('/api/shows?view=home');  // cambiato da events a shows
-        if (!res.ok) throw new Error('Errore nel caricamento dei dati');
-        const responseData = await res.json();
-        setData(responseData);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError(err instanceof Error ? err.message : 'Errore sconosciuto');
-      } finally {
-        setLoading(false);
-      }
-    };
+ // Troviamo la data di oggi (inizio giornata)
+ const today = new Date();
+ today.setHours(0, 0, 0, 0);
 
-    if (status === "authenticated") {
-      fetchData();
-    }
-  }, [status]);
+ // Troviamo lo show corrente/prossimo con la logica corretta
+ const currentShow = await prisma.show.findFirst({
+   where: {
+     OR: [
+       // Primo show senza report dopo l'ultimo chiuso
+       {
+         AND: [
+           {
+             cashReport: null,  // non ha report
+           },
+           {
+             // non esistono show precedenti con cassa non chiusa
+             date: {
+               gte: today
+             },
+             NOT: {
+               cashReport: {
+                 closingDateTime: null
+               }
+             }
+           }
+         ]
+       },
+       // OPPURE show con cassa aperta ma non chiusa
+       {
+         cashReport: {
+           closingDateTime: null,
+           
+         }
+       }
+     ]
+   },
+   include: {
+     film: true,
+     operator: true,
+     cashReport: true
+   },
+   orderBy: [
+     { date: 'asc' },
+     { time: 'asc' }
+   ],
+ });
 
-  if (status === "loading" || loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div>Caricamento...</div>
-      </div>
-    );
-  }
+ // Troviamo gli show della settimana cinematografica
+ const weekShows = await prisma.show.findMany({
+   where: {
+     date: {
+       gte: getTheatricalWeekStart(),
+       lt: new Date(getTheatricalWeekStart().setDate(getTheatricalWeekStart().getDate() + 7))
+     }
+   },
+   include: {
+     film: true,
+     operator: true,
+     cashReport: true
+   },
+   orderBy: [
+     { date: 'asc' },
+     { time: 'asc' }
+   ]
+ });
 
-  if (status === "unauthenticated") {
-    router.push('/login');
-    return null;
-  }
+ // Formattiamo i dati per i componenti
+ const formattedWeekShows = weekShows.map(show => ({
+   id: show.id,
+   date: show.date.toISOString(),
+   time: show.time.toString(),
+   film_title: show.film.title,
+   operator_name: show.operator?.username,
+   is_closed: show.cashReport?.closingDateTime !== null,
+   report_id: show.cashReport?.id,
+   is_manageable: show.operator?.username === session.user.username
+ }));
 
-  if (error) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg">
-          {error}
-        </div>
-      </div>
-    );
-  }
+ const formattedCurrentShow = currentShow ? {
+   id: currentShow.id,
+   date: currentShow.date.toISOString(),
+   time: currentShow.time.toString(),
+   film_title: currentShow.film.title,
+   operator_name: currentShow.operator?.username,
+   is_closed: currentShow.cashReport?.closingDateTime !== null,
+   report_id: currentShow.cashReport?.id,
+   is_manageable: currentShow.operator?.username === session.user.username
+ } : null;
 
-  return (
-    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="grid gap-8">
-        {/* Sezione principale con lo show da gestire */}
-        <CurrentTaskCard show={data.currentShow} />
-
-        {/* Ultima chiusura a sinistra, lista shows a destra */}
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Colonna sinistra: ultimo show gestito */}
-          <div className="lg:col-span-1 hidden">
-            <LastHandledCard show={data.lastHandled} />
-          </div>
-
-          {/* Colonna destra: shows programmati */}
-          <div className="lg:col-span-2">
-            <ShowsTable shows={data.todayShows} />
-          </div>
-        </div>
-      </div>
-    </main>
-  );
+ return (
+   <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+     <div>
+       <CurrentTaskCard show={formattedCurrentShow} />
+     </div>
+     <div className="mt-6">
+       <ShowsTable shows={formattedWeekShows} />
+     </div>
+   </main>
+ );
 }

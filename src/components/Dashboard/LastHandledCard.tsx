@@ -1,13 +1,14 @@
 // src/components/Home/LastHandledCard.tsx
 import { CalendarDays } from 'lucide-react';  // Rimosso Euro che non usiamo
 import { type LastHandledCardProps } from './types';
+import { Decimal } from '@prisma/client/runtime/library';
 
 export default function LastHandledCard({ show }: LastHandledCardProps) {
   if (!show) {
     return null;
   }
 
-  const formatCurrency = (amount: number | null | undefined) => {
+  const formatCurrency = (amount: number | Decimal |null | undefined) => {
     return new Intl.NumberFormat('it-IT', {
       style: 'currency',
       currency: 'EUR'
