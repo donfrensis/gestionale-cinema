@@ -36,10 +36,10 @@ export default function Navbar() {
    // { name: 'Home', href: '/', icon: Home },
    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
    ...(session.user?.isAdmin ? [
-     { name: 'Films', href: '/dashboard/films', icon: Film },
-     { name: 'Users', href: '/dashboard/users', icon: Users },
-     { name: 'Reports', href: '/dashboard/reports', icon: FileText },
-     { name: 'Withdrawals', href: '/dashboard/withdrawals', icon: Banknote },
+     { name: 'Films', href: '/films', icon: Film },
+     { name: 'Users', href: '/users', icon: Users },
+     { name: 'Reports', href: '/reports', icon: FileText },
+     { name: 'Withdrawals', href: '/withdrawals', icon: Banknote },
    ] : []),
    { name: 'Availability', href: '/availability', icon: Calendar },
  ];

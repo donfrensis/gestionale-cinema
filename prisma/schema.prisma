@@ -23,7 +23,7 @@ model User {
 model Film {
   id            Int      @id @default(autoincrement())
   title         String
-  duration      Int
+  duration      Int?
   bolId         Int?     // ID BOL LiveTicket
   cinetelId     String?
   description   String?  @db.Text
