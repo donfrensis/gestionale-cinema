@@ -1,5 +1,4 @@
-// src/components/Home/CurrentTaskCard.tsx
-
+// src/components/Dashboard/CurrentTaskCard.tsx
 import { CalendarDays, AlertCircle, Clock } from 'lucide-react';
 import { type Show } from './types';
 import ManageCashButton from '@/components/Shows/ManageCashButton';
@@ -23,7 +22,7 @@ export default function CurrentTaskCard({ show }: CurrentTaskCardProps) {
   }
 
   const getStatusBadge = () => {
-    switch(show.show_timing) {  // Dobbiamo aggiungere questo campo al tipo Show
+    switch(show.show_timing) {
       case 'current':
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -57,7 +56,12 @@ export default function CurrentTaskCard({ show }: CurrentTaskCardProps) {
             </div>
             <div className="text-sm text-gray-500 flex items-center gap-2">
               <CalendarDays className="h-4 w-4" />
-              {new Date(show.date).toLocaleDateString('it-IT')} {new Date(show.time).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+              {new Date(show.datetime).toLocaleString('it-IT', {
+                day: 'numeric',
+                month: 'long',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}
             </div>
             <div className="mt-2 text-sm text-gray-500">
               {show.operator_name ? (

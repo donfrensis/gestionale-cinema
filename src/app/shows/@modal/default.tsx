@@ -1,4 +1,4 @@
-// src/app/films/@modal/default.tsx
+//  src/app/shows/@modal/default.tsx
 export default function Default() {
     return null
   }

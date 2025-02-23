@@ -8,54 +8,53 @@ import { Calendar, Clock, MessageSquare, FilmIcon } from 'lucide-react'
 import { toast } from '@/components/ui/use-toast'
 
 interface Show {
- id: number
- date: string
- time: string
- film: {
-   id: number
-   title: string
- }
- operatorId: number | null
- operator?: {
-   username: string
- }
- notes?: string
- availability: Array<{ status: string }>
+  id: number
+  datetime: string
+  film: {
+    id: number
+    title: string
+  }
+  operatorId: number | null
+  operator?: {
+    username: string
+  }
+  notes?: string
+  availability: Array<{ status: string }>
 }
 
 export default function AvailabilityCalendar({ isAdmin }: { isAdmin: boolean }) {
- const [shows, setShows] = useState<Show[]>([])
- const [loading, setLoading] = useState(true)
- const [noteInput, setNoteInput] = useState('')
- const [activeShowId, setActiveShowId] = useState<number | null>(null)
- const [actionLoading, setActionLoading] = useState(false)
+  const [shows, setShows] = useState<Show[]>([])
+  const [loading, setLoading] = useState(true)
+  const [noteInput, setNoteInput] = useState('')
+  const [activeShowId, setActiveShowId] = useState<number | null>(null)
+  const [actionLoading, setActionLoading] = useState(false)
 
- useEffect(() => {
-   fetchShows()
- }, [])
+  useEffect(() => {
+    fetchShows()
+  }, [])
 
- const fetchShows = async () => {
-   try {
-     const response = await fetch('/api/shows/available', {
-       method: 'POST',
-       headers: { 'Content-Type': 'application/json' },
-       body: JSON.stringify({})
-     })
+  const fetchShows = async () => {
+    try {
+      const response = await fetch('/api/shows/available', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      })
 
-     if (!response.ok) throw new Error('Failed to fetch shows')
-     const data = await response.json()
-     setShows(data)
-   } catch (error) {
-     console.error('Errore nel caricamento degli spettacoli:', error)
-     toast({
-       variant: "destructive",
-       title: "Errore",
-       description: "Impossibile caricare gli spettacoli. Riprova più tardi."
-     })
-   } finally {
-     setLoading(false)
-   }
- }
+      if (!response.ok) throw new Error('Failed to fetch shows')
+      const data = await response.json()
+      setShows(data)
+    } catch (error) {
+      console.error('Errore nel caricamento degli spettacoli:', error)
+      toast({
+        variant: "destructive",
+        title: "Errore",
+        description: "Impossibile caricare gli spettacoli. Riprova più tardi."
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
  const handleAssign = async (showId: number) => {
    try {
@@ -144,14 +143,7 @@ export default function AvailabilityCalendar({ isAdmin }: { isAdmin: boolean }) 
        <div className="space-y-4">
          {shows.map((show) => {
            const now = new Date()
-           const showDate = new Date(show.date)
-           const showTime = new Date(show.time)
-           
-           const showDateTime = new Date(showDate)
-           showDateTime.setHours(showTime.getHours())
-           showDateTime.setMinutes(showTime.getMinutes())
-           showDateTime.setSeconds(showTime.getSeconds())
-           
+           const showDateTime = new Date(show.datetime)
            const isShowPassed = showDateTime < now
 
            return (
@@ -160,9 +152,9 @@ export default function AvailabilityCalendar({ isAdmin }: { isAdmin: boolean }) 
                  <div className="flex items-center justify-between">
                    <div className="flex items-center space-x-2 text-sm text-gray-600">
                      <Calendar className="h-4 w-4" />
-                     <span>{new Date(show.date).toLocaleDateString()}</span>
+                     <span>{showDateTime.toLocaleDateString()}</span>
                      <Clock className="h-4 w-4 ml-2" />
-                     <span>{showTime.toLocaleTimeString().slice(0, 5)}</span>
+                     <span>{showDateTime.toLocaleTimeString().slice(0, 5)}</span>
                      <FilmIcon className="h-4 w-4 ml-2"/>
                      <span>{show.film.title}</span>
                    </div>

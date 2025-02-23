@@ -67,7 +67,6 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
       router.refresh()
       onClose()
     } catch (error) {
-      console.error('Error saving film:', error)
       toast({
         variant: "destructive",
         title: "Errore",

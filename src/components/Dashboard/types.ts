@@ -1,41 +1,39 @@
-//  src/components/Home/types.ts
+//  src/components/Dashboard/types.ts
 import { Decimal } from '@prisma/client/runtime/library';
 import { JsonValue } from '@prisma/client/runtime/library';
 
 type CashBreakdown = {
- "50": number;
- "20": number;
- "10": number;
- "5": number;
- "2": number;
- "1": number;
- "050": number;
- other: number;
+  "50": number;
+  "20": number;
+  "10": number;
+  "5": number;
+  "2": number;
+  "1": number;
+  "050": number;
+  other: number;
 };
 
 export type Show = {
- id: number;
- date: string;
- time: string;
- film_title: string;
- operator_name?: string;
- is_closed: boolean;
- report_id?: number;
- show_timing?: 'current' | 'next' | 'past';
- is_manageable?: boolean;
- 
- // Campi cassa
- pos_total?: Decimal;
- subscription_sold?: Decimal;
- ticket_system_total?: Decimal;
+  id: number;
+  datetime: string;
+  film_title: string;
+  operator_name?: string;
+  is_closed: boolean;
+  report_id?: number;
+  show_timing?: 'current' | 'next' | 'past';
+  is_manageable?: boolean;
+  // Campi cassa
+  pos_total?: Decimal;
+  subscription_sold?: Decimal;
+  ticket_system_total?: Decimal;
 };
 
 export type ShowsTableProps = {
- shows: Show[];
+  shows: Show[];
 };
 
 export type CurrentTaskCardProps = {
- show?: Show | null;
+  show?: Show | null;
 };
 
 export function calculateTotalFromCashJson(cashJson: JsonValue | undefined | null): Decimal {

@@ -35,8 +35,7 @@ model Film {
 
 model Show {
   id          Int           @id @default(autoincrement())
-  date        DateTime      @db.Date
-  time        DateTime      @db.Time
+  datetime    DateTime      // nuovo campo unificato
   filmId      Int
   film        Film          @relation(fields: [filmId], references: [id])
   operatorId  Int?
