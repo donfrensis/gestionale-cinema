@@ -9,6 +9,7 @@ import {
  Calendar, 
  Users, 
  Film, 
+ TvMinimalPlay,
  LogOut,
  LayoutDashboard,
  FileText,
@@ -36,11 +37,11 @@ export default function Navbar() {
    // { name: 'Home', href: '/', icon: Home },
    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
    ...(session.user?.isAdmin ? [
-     { name: 'Shows', href: '/shows', icon: Film },
+     { name: 'Shows', href: '/shows', icon: TvMinimalPlay },
      { name: 'Films', href: '/films', icon: Film },
      { name: 'Users', href: '/users', icon: Users },
      { name: 'Reports', href: '/reports', icon: FileText },
-     { name: 'Withdrawals', href: '/withdrawals', icon: Banknote },
+     { name: 'Prel./Vers.', href: '/withdrawals', icon: Banknote },
    ] : []),
    { name: 'Availability', href: '/availability', icon: Calendar },
  ];

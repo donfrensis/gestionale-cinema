@@ -1,4 +1,4 @@
-// src/components/Shows/ManageCashButton.tsx
+// src/components/Shows/ViewCashButton.tsx
 'use client';
 
 import { Euro } from 'lucide-react';
@@ -6,23 +6,22 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Show } from '@/components/Dashboard/types';
 
-interface ManageCashButtonProps {
+interface ViewCashButtonProps {
   show: Show;
   size?: 'default' | 'sm' | 'lg';
 }
 
-export default function ManageCashButton({ show, size = 'default' }: ManageCashButtonProps) {
+export default function ViewCashButton({ show, size = 'default' }: ViewCashButtonProps) {
   return (
     <Button
       size={size}
-      disabled={!show.is_manageable}
-      variant={show.is_manageable ? 'default' : 'secondary'}
+      variant="secondary"
       className="gap-2"
       asChild
     >
       <Link href={`/shows/${show.id}/cash`}>
         <Euro className="h-4 w-4 mr-2" />
-        Gestisci Cassa
+        Visualizza Cassa
       </Link>
     </Button>
   );

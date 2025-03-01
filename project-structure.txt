@@ -1,4 +1,5 @@
 .
+├── backup_pre_migration_20250219_234346.sql
 ├── eslint.config.mjs
 ├── next.config.ts
 ├── next-env.d.ts
@@ -7,6 +8,14 @@
 ├── package-lock.json
 ├── postcss.config.mjs
 ├── prisma
+│   ├── migrations
+│   │   ├── 20250127235147_add_availability_and_cash_management
+│   │   │   └── migration.sql
+│   │   ├── 20250127235641_add_availability_and_cash_management
+│   │   │   └── migration.sql
+│   │   ├── 20250220002730_unify_show_datetime
+│   │   │   └── migration.sql
+│   │   └── migration_lock.toml
 │   └── schema.prisma
 ├── project-structure.txt
 ├── public
@@ -24,34 +33,123 @@
 │   ├── app
 │   │   ├── api
 │   │   │   ├── auth
+│   │   │   │   ├── change-password
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── [...nextauth]
+│   │   │   │       └── route.ts
+│   │   │   ├── availability
+│   │   │   │   ├── notifications
+│   │   │   │   └── subscribe
 │   │   │   ├── cash
 │   │   │   ├── films
+│   │   │   │   ├── [id]
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
 │   │   │   ├── liveticket
 │   │   │   ├── shows
+│   │   │   │   ├── available
+│   │   │   │   │   └── route.ts
+│   │   │   │   ├── [id]
+│   │   │   │   │   ├── assign
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   ├── route.ts
+│   │   │   │   │   └── withdraw
+│   │   │   │   │       └── route.ts
+│   │   │   │   └── route.ts
 │   │   │   ├── sumup
-│   │   │   └── users
+│   │   │   ├── users
+│   │   │   └── withdrawals
 │   │   ├── (auth)
-│   │   ├── (dashboard)
-│   │   │   ├── cash
-│   │   │   ├── films
-│   │   │   ├── shows
-│   │   │   └── users
+│   │   │   ├── first-access
+│   │   │   │   └── page.tsx
+│   │   │   ├── layout.tsx
+│   │   │   └── login
+│   │   │       └── page.tsx
+│   │   ├── availability
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
+│   │   ├── cash
+│   │   │   ├── close
+│   │   │   ├── open
+│   │   │   └── register
+│   │   ├── dashboard
+│   │   │   ├── layout.tsx
+│   │   │   └── page.tsx
 │   │   ├── favicon.ico
+│   │   ├── films
+│   │   │   ├── layout.tsx
+│   │   │   ├── @modal
+│   │   │   │   ├── default.tsx
+│   │   │   │   ├── [id]
+│   │   │   │   │   └── edit
+│   │   │   │   │       └── page.tsx
+│   │   │   │   └── new
+│   │   │   │       └── page.tsx
+│   │   │   └── page.tsx
 │   │   ├── globals.css
 │   │   ├── layout.tsx
-│   │   ├── (mobile)
-│   │   │   ├── availability
-│   │   │   │   └── page.tsx
-│   │   │   └── layout.tsx
-│   │   └── page.tsx
+│   │   ├── page.tsx
+│   │   ├── reports
+│   │   ├── shows
+│   │   │   ├── layout.tsx
+│   │   │   ├── @modal
+│   │   │   │   ├── default.tsx
+│   │   │   │   ├── [id]
+│   │   │   │   │   └── edit
+│   │   │   │   │       └── page.tsx
+│   │   │   │   └── new
+│   │   │   │       └── page.tsx
+│   │   │   └── page.tsx
+│   │   ├── users
+│   │   └── withdrawals
 │   ├── components
-│   │   ├── auth
-│   │   │   └── LoginForm.tsx
-│   │   └── availability
-│   │       └── AvailabilityCalendar.tsx
+│   │   ├── Auth
+│   │   │   └── index.tsx
+│   │   ├── Availability
+│   │   │   └── AvailabilityCalendar.tsx
+│   │   ├── Dashboard
+│   │   │   ├── CurrentTaskCard.tsx
+│   │   │   ├── index.ts
+│   │   │   ├── ShowsTable.tsx
+│   │   │   └── types.ts
+│   │   ├── Films
+│   │   │   ├── FilmFormModal.tsx
+│   │   │   ├── FilmForm.tsx
+│   │   │   └── FilmList.tsx
+│   │   ├── Navbar.tsx
+│   │   ├── Providers
+│   │   │   └── SessionProvider.tsx
+│   │   ├── Shows
+│   │   │   ├── ManageCashButton.tsx
+│   │   │   ├── ShowFilters.tsx
+│   │   │   ├── ShowFormModal.tsx
+│   │   │   ├── ShowForm.tsx
+│   │   │   ├── ShowList.tsx
+│   │   │   ├── ShowsTable.tsx
+│   │   │   └── types.ts
+│   │   └── ui
+│   │       ├── button.tsx
+│   │       ├── card.tsx
+│   │       ├── dialog.tsx
+│   │       ├── input.tsx
+│   │       ├── label.tsx
+│   │       ├── select.tsx
+│   │       ├── table.tsx
+│   │       ├── textarea.tsx
+│   │       ├── toaster.tsx
+│   │       ├── toast.tsx
+│   │       └── use-toast.ts
 │   ├── lib
+│   │   ├── auth.ts
+│   │   ├── db.ts
+│   │   └── utils.ts
 │   └── types
+│       ├── films.ts
+│       ├── next-auth.d.ts
+│       └── shows.ts
 ├── tailwind.config.ts
+├── testPrisma.ts
+├── tree.txt
 └── tsconfig.json
 
-26 directories, 28 files
+60 directories, 92 files

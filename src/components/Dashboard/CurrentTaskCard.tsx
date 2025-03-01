@@ -1,7 +1,8 @@
 // src/components/Dashboard/CurrentTaskCard.tsx
 import { CalendarDays, AlertCircle, Clock } from 'lucide-react';
 import { type Show } from './types';
-import ManageCashButton from '@/components/Shows/ManageCashButton';
+import ManageDashboardCashButton from '@/components/Dashboard/ManageDashboardCashButton';
+
 
 interface CurrentTaskCardProps {
   show?: Show | null;
@@ -72,7 +73,7 @@ export default function CurrentTaskCard({ show }: CurrentTaskCardProps) {
             </div>
           </div>
           <div className="flex gap-2">
-            <ManageCashButton show={{
+            <ManageDashboardCashButton show={{
               ...show,
               is_manageable: true
             }} size="lg" />
