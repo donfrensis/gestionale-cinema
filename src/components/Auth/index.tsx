@@ -1,3 +1,5 @@
+//  src/components/Auth/index.tsx
+
 'use client';
 
 import React, { useState } from 'react';
