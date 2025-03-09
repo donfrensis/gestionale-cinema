@@ -1,64 +1,83 @@
 // src/app/api/shows/[id]/assign/route.ts
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
-import { auth } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { notifyEventTaken } from '@/lib/server-notifications';
 
 export async function POST(
-  request: Request,
-  context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
   try {
-    const user = await auth()
+    const user = await auth();
     if (!user) {
-      return new NextResponse('Unauthorized', { status: 401 })
+      return new NextResponse('Unauthorized', { status: 401 });
     }
 
-    const paramsData = await context.params
-    const { notes } = await request.json()
-    const showId = parseInt(paramsData.id)
+    const showId = parseInt(params.id);
+    if (isNaN(showId)) {
+      return new NextResponse('Invalid show ID', { status: 400 });
+    }
 
-    // Prima verifichiamo se esiste già una availability per questo utente e show
-    const existingAvailability = await prisma.availability.findUnique({
-      where: {
-        showId_userId: {
-          showId,
-          userId: parseInt(user.id)
+    const data = await request.json();
+    const { notes } = data;
+
+    // Verifica che lo spettacolo esista
+    const show = await prisma.show.findUnique({
+      where: { id: showId },
+      include: {
+        film: true,
+        availability: {
+          where: { userId: parseInt(user.id) }
         }
       }
-    })
+    });
 
-    if (existingAvailability) {
-      // Se esiste, aggiorniamo lo stato invece di creare un nuovo record
+    if (!show) {
+      return new NextResponse('Show not found', { status: 404 });
+    }
+
+    // Verifica se lo spettacolo è già passato
+    if (new Date(show.datetime) < new Date()) {
+      return new NextResponse('Cannot assign to past shows', { status: 400 });
+    }
+
+    // Aggiorna la disponibilità o crea una nuova
+    if (show.availability.length > 0) {
       await prisma.availability.update({
         where: {
-          id: existingAvailability.id
+          id: show.availability[0].id
         },
         data: {
-          status: "CONFIRMED",
+          status: 'CONFIRMED',
           notes: notes || null
         }
-      })
+      });
     } else {
-      // Se non esiste, lo creiamo
       await prisma.availability.create({
         data: {
           showId,
           userId: parseInt(user.id),
-          status: "CONFIRMED",
+          status: 'CONFIRMED',
           notes: notes || null
         }
-      })
+      });
     }
 
-    // Aggiorna lo show con l'operatore
+    // Aggiorna lo spettacolo con l'operatore assegnato
     await prisma.show.update({
       where: { id: showId },
-      data: { operatorId: parseInt(user.id) }
-    })
+      data: {
+        operatorId: parseInt(user.id)
+      }
+    });
 
-    return NextResponse.json({ success: true })
+    // Invia notifica agli amministratori
+    await notifyEventTaken(prisma, parseInt(user.id), showId);
+
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Failed to assign show:', error)
-    return new NextResponse('Internal Server Error', { status: 500 })
+    console.error('Error assigning show:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
   }
 }

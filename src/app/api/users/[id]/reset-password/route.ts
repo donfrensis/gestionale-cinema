@@ -47,7 +47,7 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     // Genera una password temporanea (base per il primo accesso)
-    const temporaryPassword = 'CinemPassTemp1';
+    const temporaryPassword = 'cassacinema';
     const passwordHash = await bcrypt.hash(temporaryPassword, 10);
 
     // Aggiorna l'utente impostando la password temporanea e firstAccess a true

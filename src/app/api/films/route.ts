@@ -7,11 +7,11 @@ import type { FilmFormData } from '@/types/films'
 
 // GET /api/films - Lista film (solo admin)
 export async function GET() {
-    try {
+  try {
       // Verifica autenticazione e ruolo admin
       const session = await getServerSession(authOptions)
       if (!session?.user?.isAdmin) {
-        return NextResponse.json(
+      return NextResponse.json(
           { error: 'Non autorizzato' },
           { status: 403 }
         )
@@ -22,16 +22,16 @@ export async function GET() {
           title: 'asc'
         }
       })
-      
+
       return NextResponse.json(films)
-    } catch (error) {
+  } catch (error) {
       console.error('Error fetching films:', error)
-      return NextResponse.json(
+    return NextResponse.json(
         { error: 'Errore nel recupero dei film' },
-        { status: 500 }
+      { status: 500 }
       )
-    }
   }
+}
 
 // POST /api/films - Crea nuovo film
 export async function POST(request: Request) {
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
 
     // Parsing e validazione dati
     const data = await request.json() as FilmFormData
-    
+
     // Validazioni base
     if (!data.title?.trim()) {
       return NextResponse.json(
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         { status: 400 }
       )
     }
-    
+
     // Verifica film duplicato
     const existingFilm = await prisma.film.findFirst({
       where: {

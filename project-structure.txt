@@ -27,7 +27,9 @@
 │   │   ├── next.svg
 │   │   ├── vercel.svg
 │   │   └── window.svg
-│   └── manifest.json
+│   ├── manifest.json
+│   ├── offline.html
+│   └── sw.js
 ├── README.md
 ├── src
 │   ├── app
@@ -41,6 +43,13 @@
 │   │   │   │   ├── notifications
 │   │   │   │   └── subscribe
 │   │   │   ├── cash
+│   │   │   │   ├── close
+│   │   │   │   │   └── [id]
+│   │   │   │   │       └── route.ts
+│   │   │   │   └── open
+│   │   │   │       └── route.ts
+│   │   │   ├── deposits
+│   │   │   │   └── route.ts
 │   │   │   ├── films
 │   │   │   │   ├── [id]
 │   │   │   │   │   └── route.ts
@@ -58,7 +67,13 @@
 │   │   │   │   └── route.ts
 │   │   │   ├── sumup
 │   │   │   ├── users
+│   │   │   │   ├── [id]
+│   │   │   │   │   ├── reset-password
+│   │   │   │   │   │   └── route.ts
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── route.ts
 │   │   │   └── withdrawals
+│   │   │       └── route.ts
 │   │   ├── (auth)
 │   │   │   ├── first-access
 │   │   │   │   └── page.tsx
@@ -68,12 +83,13 @@
 │   │   ├── availability
 │   │   │   ├── layout.tsx
 │   │   │   └── page.tsx
-│   │   ├── cash
-│   │   │   ├── close
-│   │   │   ├── open
-│   │   │   └── register
 │   │   ├── dashboard
 │   │   │   ├── layout.tsx
+│   │   │   ├── @modal
+│   │   │   │   ├── default.tsx
+│   │   │   │   └── [id]
+│   │   │   │       └── cash
+│   │   │   │           └── page.tsx
 │   │   │   └── page.tsx
 │   │   ├── favicon.ico
 │   │   ├── films
@@ -89,27 +105,42 @@
 │   │   ├── globals.css
 │   │   ├── layout.tsx
 │   │   ├── page.tsx
-│   │   ├── reports
 │   │   ├── shows
 │   │   │   ├── layout.tsx
 │   │   │   ├── @modal
 │   │   │   │   ├── default.tsx
 │   │   │   │   ├── [id]
+│   │   │   │   │   ├── cash
+│   │   │   │   │   │   └── page.tsx
 │   │   │   │   │   └── edit
 │   │   │   │   │       └── page.tsx
 │   │   │   │   └── new
 │   │   │   │       └── page.tsx
 │   │   │   └── page.tsx
 │   │   ├── users
+│   │   │   ├── edit
+│   │   │   │   └── [id]
+│   │   │   │       └── page.tsx
+│   │   │   ├── layout.tsx
+│   │   │   ├── new
+│   │   │   │   └── page.tsx
+│   │   │   └── page.tsx
 │   │   └── withdrawals
+│   │       ├── layout.tsx
+│   │       └── page.tsx
 │   ├── components
 │   │   ├── Auth
 │   │   │   └── index.tsx
 │   │   ├── Availability
 │   │   │   └── AvailabilityCalendar.tsx
+│   │   ├── Cash
+│   │   │   ├── CashFormModal.tsx
+│   │   │   ├── CashForm.tsx
+│   │   │   └── index.ts
 │   │   ├── Dashboard
 │   │   │   ├── CurrentTaskCard.tsx
 │   │   │   ├── index.ts
+│   │   │   ├── ManageDashboardCashButton.tsx
 │   │   │   ├── ShowsTable.tsx
 │   │   │   └── types.ts
 │   │   ├── Films
@@ -124,32 +155,40 @@
 │   │   │   ├── ShowFilters.tsx
 │   │   │   ├── ShowFormModal.tsx
 │   │   │   ├── ShowForm.tsx
-│   │   │   ├── ShowList.tsx
-│   │   │   ├── ShowsTable.tsx
-│   │   │   └── types.ts
-│   │   └── ui
-│   │       ├── button.tsx
-│   │       ├── card.tsx
-│   │       ├── dialog.tsx
-│   │       ├── input.tsx
-│   │       ├── label.tsx
-│   │       ├── select.tsx
-│   │       ├── table.tsx
-│   │       ├── textarea.tsx
-│   │       ├── toaster.tsx
-│   │       ├── toast.tsx
-│   │       └── use-toast.ts
+│   │   │   ├── ShowListCard.tsx
+│   │   │   └── ViewCashButton.tsx
+│   │   ├── ui
+│   │   │   ├── button.tsx
+│   │   │   ├── card.tsx
+│   │   │   ├── dialog.tsx
+│   │   │   ├── input.tsx
+│   │   │   ├── label.tsx
+│   │   │   ├── NotificationToggle.tsx
+│   │   │   ├── select.tsx
+│   │   │   ├── switch.tsx
+│   │   │   ├── table.tsx
+│   │   │   ├── tabs.tsx
+│   │   │   ├── textarea.tsx
+│   │   │   ├── toaster.tsx
+│   │   │   ├── toast.tsx
+│   │   │   └── use-toast.ts
+│   │   ├── Users
+│   │   │   ├── UserForm.tsx
+│   │   │   └── UserList.tsx
+│   │   └── Withdrawals
+│   │       ├── WithdrawalsDeposits.tsx
+│   │       └── WithdrawalsSummary.tsx
 │   ├── lib
 │   │   ├── auth.ts
 │   │   ├── db.ts
+│   │   ├── notifications.ts
+│   │   ├── push-client.ts
 │   │   └── utils.ts
 │   └── types
 │       ├── films.ts
 │       ├── next-auth.d.ts
 │       └── shows.ts
 ├── tailwind.config.ts
-├── testPrisma.ts
-├── tree.txt
 └── tsconfig.json
 
-60 directories, 92 files
+71 directories, 120 files

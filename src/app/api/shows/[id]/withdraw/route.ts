@@ -1,53 +1,88 @@
 // src/app/api/shows/[id]/withdraw/route.ts
-import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
-import { auth } from '@/lib/auth'
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { notifyEventWithdrawn } from '@/lib/server-notifications';
 
 export async function POST(
- request: Request,
- context: { params: { id: string } }
+  request: NextRequest,
+  { params }: { params: { id: string } }
 ) {
- try {
-   const user = await auth()
-   if (!user) {
-     return new NextResponse('Unauthorized', { status: 401 })
-   }
+  try {
+    const user = await auth();
+    if (!user) {
+      return new NextResponse('Unauthorized', { status: 401 });
+    }
 
-   const paramsData = await context.params
-   const { notes } = await request.json()
-   const showId = parseInt(paramsData.id)
+    const showId = parseInt(params.id);
+    if (isNaN(showId)) {
+      return new NextResponse('Invalid show ID', { status: 400 });
+    }
 
-   const existingAvailability = await prisma.availability.findUnique({
-     where: {
-       showId_userId: {
-         showId,
-         userId: parseInt(user.id)
-       }
-     }
-   })
+    const data = await request.json();
+    const { notes } = data;
 
-   if (!existingAvailability) {
-     return new NextResponse('No availability found for this show', { status: 404 })
-   }
+    // Verifica che lo spettacolo esista
+    const show = await prisma.show.findUnique({
+      where: { id: showId },
+      include: {
+        film: true,
+        availability: {
+          where: { userId: parseInt(user.id) }
+        }
+      }
+    });
 
-   await prisma.availability.update({
-     where: {
-       id: existingAvailability.id
-     },
-     data: {
-       status: "WITHDRAWN",
-       notes: notes || null
-     }
-   })
+    if (!show) {
+      return new NextResponse('Show not found', { status: 404 });
+    }
 
-   await prisma.show.update({
-     where: { id: showId },
-     data: { operatorId: null }
-   })
+    // Verifica se lo spettacolo è già passato
+    if (new Date(show.datetime) < new Date()) {
+      return new NextResponse('Cannot withdraw from past shows', { status: 400 });
+    }
 
-   return NextResponse.json({ success: true })
- } catch (error) {
-   console.error('Failed to withdraw from show:', error)
-   return new NextResponse('Internal Server Error', { status: 500 })
- }
+    // Verifica se l'utente è l'operatore assegnato
+    if (show.operatorId !== parseInt(user.id) && !user.isAdmin) {
+      return new NextResponse('You are not assigned to this show', { status: 403 });
+    }
+
+    // Aggiorna la disponibilità
+    if (show.availability.length > 0) {
+      await prisma.availability.update({
+        where: {
+          id: show.availability[0].id
+        },
+        data: {
+          status: 'WITHDRAWN',
+          notes: notes || null
+        }
+      });
+    } else {
+      await prisma.availability.create({
+        data: {
+          showId,
+          userId: parseInt(user.id),
+          status: 'WITHDRAWN',
+          notes: notes || null
+        }
+      });
+    }
+
+    // Rimuovi l'operatore dallo spettacolo
+    await prisma.show.update({
+      where: { id: showId },
+      data: {
+        operatorId: null
+      }
+    });
+
+    // Invia notifica agli amministratori
+    await notifyEventWithdrawn(prisma, parseInt(user.id), showId, notes || '');
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error withdrawing from show:', error);
+    return new NextResponse('Internal Server Error', { status: 500 });
+  }
 }

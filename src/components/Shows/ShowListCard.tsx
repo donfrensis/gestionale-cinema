@@ -103,7 +103,7 @@ export default function ShowListCard({ shows }: ShowListCardProps) {
                     <ShieldAlert className="h-3 w-3 mr-1" />
                   }
                   Quadratura&nbsp;
-                  {show.balance_difference > 0 ? "+" : ""}
+                  {show.balance_difference > 0 ? "+" : "-"}
                   {formatCurrency(Math.abs(show.balance_difference))}
                 </span>
               )}

@@ -1,104 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model User {
-  id            Int           @id @default(autoincrement())
-  username      String        @unique
-  passwordHash  String
-  isAdmin       Boolean       @default(false)
-  firstAccess   Boolean       @default(true)
-  createdAt     DateTime      @default(now())
-  shows         Show[]        @relation("OperatorShows")
-  availability  Availability[]
-  cashReports   CashReport[]
-  withdrawals   Withdrawal[]
+  id               Int               @id @default(autoincrement())
+  username         String            @unique
+  passwordHash     String
+  isAdmin          Boolean           @default(false)
+  firstAccess      Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  shows            Show[]            @relation("OperatorShows") // Nome relazione ripristinato
+  availability     Availability[]    // Nome ripristinato
+  cashReports      CashReport[]      // Nome ripristinato
+  withdrawals      Withdrawal[]      // Nome ripristinato
+  pushSubscriptions PushSubscription[] // Nuova relazione
+  notifications    Notification[]    // Nuova relazione
 }
 
 model Film {
-  id            Int      @id @default(autoincrement())
-  title         String
-  duration      Int?
-  bolId         Int?     // ID BOL LiveTicket
-  cinetelId     String?
-  description   String?  @db.Text
-  notes         String?  @db.Text
-  createdAt     DateTime @default(now())
-  shows         Show[]
-  importedFrom  String?  // "BOL" | "EXCEL"
+  id           Int      @id @default(autoincrement())
+  title        String
+  duration     Int?     // Questo era già nullable
+  bolId        Int?
+  cinetelId    String?
+  description  String?  @db.Text
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+  importedFrom String?
+  shows        Show[]   // Nome relazione ripristinato
 }
 
 model Show {
-  id          Int           @id @default(autoincrement())
-  datetime    DateTime      // nuovo campo unificato
-  filmId      Int
-  film        Film          @relation(fields: [filmId], references: [id])
-  operatorId  Int?
-  operator    User?         @relation("OperatorShows", fields: [operatorId], references: [id])
-  bolId       Int?          // ID_Spettacolo BOL
-  notes       String?       @db.Text
-  createdAt   DateTime      @default(now())
-  availability Availability[]
-  cashReport   CashReport?
+  id           Int            @id @default(autoincrement())
+  datetime     DateTime       @db.DateTime(0) // Questo rimpiazza date e time
+  filmId       Int
+  operatorId   Int?
+  bolId        Int?
+  notes        String?        @db.Text
+  createdAt    DateTime       @default(now())
+  availability Availability[] // Nome relazione ripristinato
+  cashReport   CashReport?    // Nome relazione ripristinato
+  film         Film           @relation(fields: [filmId], references: [id]) // Nome ripristinato
+  operator     User?          @relation("OperatorShows", fields: [operatorId], references: [id]) // Nome ripristinato
+
+  @@index([filmId], map: "Show_filmId_fkey")
+  @@index([operatorId], map: "Show_operatorId_fkey")
 }
 
 model Availability {
-  id          Int       @id @default(autoincrement())
-  showId      Int
-  show        Show      @relation(fields: [showId], references: [id])
-  userId      Int
-  user        User      @relation(fields: [userId], references: [id])
-  status      String    // "AVAILABLE" | "CONFIRMED" | "WITHDRAWN"
-  notes       String?   @db.Text
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        Int      @id @default(autoincrement())
+  showId    Int
+  userId    Int
+  status    String
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  show      Show     @relation(fields: [showId], references: [id]) // Nome ripristinato
+  user      User     @relation(fields: [userId], references: [id]) // Nome ripristinato
 
   @@unique([showId, userId])
+  @@index([userId], map: "Availability_userId_fkey")
 }
 
 model CashReport {
   id                Int       @id @default(autoincrement())
-  showId           Int       @unique
-  show             Show      @relation(fields: [showId], references: [id])
-  operatorId       Int
-  operator         User      @relation(fields: [operatorId], references: [id])
-  // Apertura
-  openingCash      Json      // { "50": 0, "20": 0, ... }
-  openingDateTime  DateTime
-  // Chiusura
-  closingCash      Json?     // { "50": 0, "20": 0, ... }
-  closingDateTime  DateTime?
-  posTotal        Decimal?   @db.Decimal(10, 2)
-  ticketTotal     Decimal?   @db.Decimal(10, 2)
-  subscriptionTotal Decimal? @db.Decimal(10, 2)
-  notes           String?    @db.Text
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  showId            Int       @unique
+  operatorId        Int
+  openingCash       Json      // { "50": 0, "20": 0, ... }
+  openingDateTime   DateTime
+  closingCash       Json?     // { "50": 0, "20": 0, ... }
+  closingDateTime   DateTime?
+  posTotal          Decimal?  @db.Decimal(10, 2)
+  ticketTotal       Decimal?  @db.Decimal(10, 2)
+  subscriptionTotal Decimal?  @db.Decimal(10, 2)
+  notes             String?   @db.Text
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime?
+  operator          User      @relation(fields: [operatorId], references: [id]) // Nome ripristinato
+  show              Show      @relation(fields: [showId], references: [id]) // Nome ripristinato
+
+  @@index([operatorId], map: "CashReport_operatorId_fkey")
 }
 
 model Withdrawal {
-  id          Int       @id @default(autoincrement())
-  amount      Decimal   @db.Decimal(10, 2)
+  id          Int          @id @default(autoincrement())
+  amount      Decimal      @db.Decimal(10, 2)
   adminId     Int
-  admin       User      @relation(fields: [adminId], references: [id])
-  bankDeposit BankDeposit? @relation(fields: [depositId], references: [id])
   depositId   Int?
-  notes       String?   @db.Text
-  createdAt   DateTime  @default(now())
+  notes       String?      @db.Text
+  createdAt   DateTime     @default(now())
+  admin       User         @relation(fields: [adminId], references: [id]) // Nome ripristinato
+  bankDeposit BankDeposit? @relation(fields: [depositId], references: [id]) // Nome ripristinato
+
+  @@index([adminId], map: "Withdrawal_adminId_fkey")
+  @@index([depositId], map: "Withdrawal_depositId_fkey")
 }
 
 model BankDeposit {
   id          Int          @id @default(autoincrement())
   amount      Decimal      @db.Decimal(10, 2)
   date        DateTime
-  reference   String?      // Riferimento operazione bancaria
+  reference   String?
   adminId     Int
-  withdrawals Withdrawal[]
   notes       String?      @db.Text
   createdAt   DateTime     @default(now())
+  withdrawals Withdrawal[] // Nome ripristinato
+}
+
+// Nuovi modelli per le notifiche
+model PushSubscription {
+  id             Int       @id @default(autoincrement())
+  userId         Int
+  endpoint       String    @unique @db.VarChar(500)
+  p256dh         String    @db.VarChar(255)
+  auth           String    @db.VarChar(255)
+  expirationTime DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade) // Nome coerente
+
+  @@index([userId], map: "PushSubscription_userId_fkey")
+}
+
+model Notification {
+  id        Int       @id @default(autoincrement())
+  userId    Int
+  title     String    @db.VarChar(255)
+  body      String    @db.Text
+  url       String?   @db.VarChar(255)
+  type      String    @db.VarChar(50)
+  priority  String    @db.VarChar(20)
+  isRead    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade) // Nome coerente
+
+  @@index([userId], map: "Notification_userId_fkey")
 }

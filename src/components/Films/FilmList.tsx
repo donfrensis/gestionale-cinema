@@ -20,8 +20,8 @@ export default function FilmList() {
  const [error, setError] = useState<string | null>(null)
  const [filterText, setFilterText] = useState('')
  const [sortConfig, setSortConfig] = useState<SortConfig>({
-   key: 'title',
-   direction: 'asc'
+   key: 'createdAt',
+   direction: 'desc'
  })
  const { toast } = useToast()
 

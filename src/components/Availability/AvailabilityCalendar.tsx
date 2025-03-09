@@ -124,6 +124,11 @@ export default function AvailabilityCalendar({ isAdmin }: { isAdmin: boolean }) 
    }
  }
 
+ const getDayOfWeek = (date: Date) => {
+   const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
+   return days[date.getDay()]
+ }
+
  if (loading) {
    return (
      <Card>
@@ -137,7 +142,7 @@ export default function AvailabilityCalendar({ isAdmin }: { isAdmin: boolean }) 
  return (
    <Card className="shadow-none border-0 bg-transparent">
      <CardHeader>
-       <h2 className="text-lg font-semibold">Eventi Disponibili</h2>
+       <h2 className="text-lg font-semibold">Eventi della settimana</h2>
      </CardHeader>
      <CardContent>
        <div className="space-y-4">
@@ -145,24 +150,21 @@ export default function AvailabilityCalendar({ isAdmin }: { isAdmin: boolean }) 
            const now = new Date()
            const showDateTime = new Date(show.datetime)
            const isShowPassed = showDateTime < now
+           const dayOfWeek = getDayOfWeek(showDateTime)
 
            return (
              <Card key={show.id} className="overflow-hidden">
-               <div className="p-4 space-y-3">
-                 <div className="flex items-center justify-between">
-                   <div className="flex items-center space-x-2 text-sm text-gray-600">
-                     <Calendar className="h-4 w-4" />
-                     <span>{showDateTime.toLocaleDateString()}</span>
-                     <Clock className="h-4 w-4 ml-2" />
-                     <span>{showDateTime.toLocaleTimeString().slice(0, 5)}</span>
-                     <FilmIcon className="h-4 w-4 ml-2"/>
-                     <span>{show.film.title}</span>
-                   </div>
-                   {show.operatorId && (
-                     <span className="text-sm bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">
-                       {show.operator?.username ? `${show.operator.username}` : ''}
-                     </span>
-                   )}
+               <div className="p-2 space-y-1">
+                 <div className="flex items-center space-x-2 text-sm text-gray-600">
+                   <Calendar className="h-4 w-4" />
+                   <span>{dayOfWeek} {showDateTime.toLocaleDateString()}</span>
+                   <Clock className="h-4 w-4 ml-2" />
+                   <span>{showDateTime.toLocaleTimeString().slice(0, 5)}</span>
+                 </div>
+                 
+                 <div className="flex items-center space-x-2 text-sm font-medium text-gray-600">
+                   <FilmIcon className="h-4 w-4"/>
+                   <span>{show.film.title}</span>
                  </div>
                  
                  {show.notes && (
@@ -173,8 +175,14 @@ export default function AvailabilityCalendar({ isAdmin }: { isAdmin: boolean }) 
                  )}
 
                  {isShowPassed ? (
-                   <Button variant="secondary" className="w-full" disabled>
-                     Evento passato
+                   <Button 
+                     variant="secondary" 
+                     className="w-full bg-gray-100 text-gray-600" 
+                     disabled
+                   >
+                     {show.operatorId && show.operator?.username 
+                       ? `Evento passato - ${show.operator.username}`
+                       : "Evento passato"}
                    </Button>
                  ) : activeShowId === show.id ? (
                    <div className="space-y-3">
@@ -217,20 +225,36 @@ export default function AvailabilityCalendar({ isAdmin }: { isAdmin: boolean }) 
                    <>
                      {!isAdmin && show.operatorId ? (
                        show.availability.length === 0 || show.availability[0].status !== 'CONFIRMED' ? (
-                         <Button variant="secondary" className="w-full" disabled>
-                           Non puoi rinunciare
+                         <Button 
+                           variant="secondary" 
+                           className="w-full bg-sky-100 hover:bg-sky-200 text-sky-800" 
+                           disabled
+                         >
+                           {show.operator?.username 
+                             ? `${show.operator.username}`
+                             : "Non puoi rinunciare"}
                          </Button>
                        ) : (
-                         <Button onClick={() => setActiveShowId(show.id)} variant="destructive" className="w-full">
-                           Rinuncia
+                         <Button 
+                           onClick={() => setActiveShowId(show.id)} 
+                           variant="destructive" 
+                           className="w-full bg-sky-100 hover:bg-sky-200 text-sky-800"
+                         >
+                           {show.operator?.username 
+                             ? `${show.operator.username} - rimuovi disponibilità`
+                             : "Rinuncia"}
                          </Button>
                        )
                      ) : (
-                       <Button onClick={() => setActiveShowId(show.id)} 
-                         variant={show.operatorId ? "destructive" : "default"} 
-                         className="w-full"
+                       <Button 
+                         onClick={() => setActiveShowId(show.id)} 
+                         className={`w-full ${show.operatorId 
+                           ? "bg-sky-100 hover:bg-sky-200 text-sky-800" 
+                           : "bg-green-100 hover:bg-green-200 text-green-800"}`}
                        >
-                         {show.operatorId ? 'Rinuncia' : 'Segnati Disponibile'}
+                         {show.operatorId 
+                           ? `Rimuovi - ${show.operator?.username || ''}`
+                           : "Segnati Disponibile"}
                        </Button>
                      )}
                    </>

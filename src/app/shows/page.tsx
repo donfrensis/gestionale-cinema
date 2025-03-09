@@ -82,7 +82,7 @@ export default async function ShowsPage() {
       const actualIncome = cash_difference + pos_total;
       
       // Calcola la differenza di quadratura
-      balance_difference = declaredIncome - actualIncome;
+      balance_difference = actualIncome - declaredIncome;
     }
 
     return {
