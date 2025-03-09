@@ -5,7 +5,7 @@ import { redirect } from 'next/navigation'
 import { Settings, LogOut } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth-options';
 import Image from 'next/image';
 import NotificationToggle from '@/components/ui/NotificationToggle';
 

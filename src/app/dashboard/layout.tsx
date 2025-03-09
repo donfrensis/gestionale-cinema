@@ -1,7 +1,7 @@
 // src/app/dashboard/layout.tsx
 import { getServerSession } from "next-auth/next";
 import { redirect } from "next/navigation";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { authOptions } from '@/lib/auth-options';
 import Navbar from "@/components/Navbar";
 import React from "react";
 

@@ -1,7 +1,7 @@
 // src/app/users/edit/[id]/page.tsx
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth-options';
 import UserForm from '@/components/Users/UserForm';
 import { prisma } from '@/lib/db';
 

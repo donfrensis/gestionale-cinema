@@ -1,18 +1,18 @@
 // src/app/api/cash/close/[id]/route.ts
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db';
 import { calculateTotalFromCashJson } from '@/components/Dashboard/types';
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
-) {
+  context: { params: Promise<{ id: string }> }
+): Promise<Response> {
   try {
-    // Risolvi i parametri in modo asincrono
-    const resolvedParams = await params;
-    const id = parseInt(resolvedParams.id);
+    // Attendi i parametri in modo asincrono
+    const params = await context.params;
+    const id = parseInt(params.id);
     
     // Usa authOptions con getServerSession
     const session = await getServerSession(authOptions);

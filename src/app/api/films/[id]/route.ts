@@ -1,14 +1,15 @@
 //  src/app/api/films/[id]/route.ts
 import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth-options';
 import { prisma } from '@/lib/db'
 import type { FilmFormData } from '@/types/films'
 
-type RouteParams = { params: { id: string } }
+// Nota: tipo aggiornato per Next.js 15
+type RouteParams = { params: Promise<{ id: string }> }
 
 // GET /api/films/[id] - Dettagli film
-export async function GET(request: Request, { params }: RouteParams) {
+export async function GET(request: Request, context: RouteParams) {
  try {
    // Verifica autenticazione e ruolo admin
    const session = await getServerSession(authOptions)
@@ -19,9 +20,9 @@ export async function GET(request: Request, { params }: RouteParams) {
      )
    }
 
-   const resolvedParams = await params
+   const params = await context.params;
    const film = await prisma.film.findUnique({
-     where: { id: parseInt(resolvedParams.id) },
+     where: { id: parseInt(params.id) },
      include: {
        shows: {
          select: {
@@ -50,7 +51,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 }
 
 // PUT /api/films/[id] - Aggiorna film
-export async function PUT(request: Request, { params }: RouteParams) {
+export async function PUT(request: Request, context: RouteParams) {
  try {
    // Verifica autenticazione e ruolo admin
    const session = await getServerSession(authOptions)
@@ -72,8 +73,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
    }
    
    // Verifica esistenza film
-   const resolvedParams = await params
-   const filmId = parseInt(resolvedParams.id)
+   const params = await context.params;
+   const filmId = parseInt(params.id);
    const existingFilm = await prisma.film.findUnique({
      where: { id: filmId }
    })
@@ -134,7 +135,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 // DELETE /api/films/[id] - Elimina film
-export async function DELETE(request: Request, { params }: RouteParams) {
+export async function DELETE(request: Request, context: RouteParams) {
  try {
    // Verifica autenticazione e ruolo admin
    const session = await getServerSession(authOptions)
@@ -145,8 +146,8 @@ export async function DELETE(request: Request, { params }: RouteParams) {
      )
    }
 
-   const resolvedParams = await params
-   const filmId = parseInt(resolvedParams.id)
+   const params = await context.params;
+   const filmId = parseInt(params.id);
 
    // Verifica se il film ha spettacoli associati
    const filmWithShows = await prisma.film.findUnique({
