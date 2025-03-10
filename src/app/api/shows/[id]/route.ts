@@ -5,7 +5,8 @@ import { authOptions } from '@/lib/auth-options';
 import { prisma } from "@/lib/db"
 import { z } from "zod"
 
-type RouteParams = { params: { id: string } }
+// Tipo aggiornato per Next.js 15
+type RouteParams = { params: Promise<{ id: string }> }
 
 const updateShowSchema = z.object({
   datetime: z.string().refine((value) => {
@@ -21,15 +22,15 @@ const updateShowSchema = z.object({
   notes: z.string().optional()
 })
 
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(request: NextRequest, context: RouteParams) {
   try {
     const session = await getServerSession(authOptions)
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const resolvedParams = await params
-    const showId = parseInt(resolvedParams.id)
+    const params = await context.params;
+    const showId = parseInt(params.id)
 
     const show = await prisma.show.findUnique({
       where: { id: showId },
@@ -61,15 +62,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function PUT(request: NextRequest, { params }: RouteParams) {
+export async function PUT(request: NextRequest, context: RouteParams) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user.isAdmin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const resolvedParams = await params
-    const showId = parseInt(resolvedParams.id)
+    const params = await context.params;
+    const showId = parseInt(params.id)
 
     const json = await request.json()
     const validatedData = updateShowSchema.parse(json)
@@ -117,15 +118,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, context: RouteParams) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user.isAdmin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    const resolvedParams = await params
-    const showId = parseInt(resolvedParams.id)
+    const params = await context.params;
+    const showId = parseInt(params.id)
 
     const show = await prisma.show.findUnique({
       where: { id: showId },

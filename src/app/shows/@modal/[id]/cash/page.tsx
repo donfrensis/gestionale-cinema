@@ -6,7 +6,7 @@ import { calculateTotalFromCashJson } from '@/components/Dashboard/types';
 import CashFormModal from '@/components/Cash/CashFormModal';
 import type { CashReport } from '@prisma/client';
 
-export default async function CashModal({ params }: { params: { id: string } }) {
+export default async function CashModal({ params }: { params: Promise<{ id: string }> }) {
   // Risolvi i parametri in modo asincrono come nelle altre modali
   const resolvedParams = await params;
   const id = parseInt(resolvedParams.id);

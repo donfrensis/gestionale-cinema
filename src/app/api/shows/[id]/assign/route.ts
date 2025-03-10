@@ -4,10 +4,8 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { notifyEventTaken } from '@/lib/server-notifications';
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function POST(request: NextRequest, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   try {
     const user = await auth();
     if (!user) {

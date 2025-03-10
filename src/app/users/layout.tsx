@@ -3,13 +3,18 @@ import { getServerSession } from "next-auth/next"
 import { redirect } from "next/navigation"
 import { authOptions } from '@/lib/auth-options';
 import Navbar from "@/components/Navbar"
+import { Metadata } from "next"
 
+export const metadata: Metadata = {
+  title: 'Gestione Utenti',
+  description: 'Gestione degli utenti del sistema cassa cinema',
+}
+
+// In Next.js 15, il layout deve ricevere solo children
 export default async function UsersLayout({
-  children,
-  modal
+  children
 }: {
   children: React.ReactNode
-  modal: React.ReactNode
 }) {
   const session = await getServerSession(authOptions)
 
@@ -26,7 +31,6 @@ export default async function UsersLayout({
       <Navbar />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
-        {modal}
       </main>
     </div>
   )

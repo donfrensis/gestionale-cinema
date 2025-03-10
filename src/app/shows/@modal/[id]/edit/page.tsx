@@ -3,8 +3,9 @@ import { notFound } from "next/navigation"
 import { prisma } from "@/lib/db"
 import ShowFormModal from "@/components/Shows/ShowFormModal"
 
+// Aggiornato per Next.js 15
 interface EditShowPageProps {
-  params: { id: string }
+  params: Promise<{ id: string }>
 }
 
 export default async function EditShowPage({ params }: EditShowPageProps) {

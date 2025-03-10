@@ -5,14 +5,15 @@ import { prisma } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { authOptions } from '@/lib/auth-options';
 
+// Aggiornato per Next.js 15
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // POST /api/users/[id]/reset-password - Reset password di un utente
-export async function POST(request: Request, { params }: RouteParams) {
+export async function POST(request: Request, context: RouteParams) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -25,8 +26,8 @@ export async function POST(request: Request, { params }: RouteParams) {
     }
 
     // Accesso asincrono ai parametri in Next.js 15
-    const { id } = await params;
-    const userId = parseInt(id);
+    const params = await context.params;
+    const userId = parseInt(params.id);
     if (isNaN(userId)) {
       return NextResponse.json(
         { message: 'ID utente non valido' },

@@ -5,10 +5,11 @@ import { authOptions } from '@/lib/auth-options';
 import UserForm from '@/components/Users/UserForm';
 import { prisma } from '@/lib/db';
 
+// Aggiornato per Next.js 15
 interface EditUserPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default async function EditUserPage({ params }: EditUserPageProps) {
@@ -20,8 +21,8 @@ export default async function EditUserPage({ params }: EditUserPageProps) {
   }
 
   // Accesso asincrono ai parametri in Next.js 15
-  const { id } = await params;
-  const userId = parseInt(id);
+  const resolvedParams = await params;
+  const userId = parseInt(resolvedParams.id);
   if (isNaN(userId)) {
     redirect('/users');
   }

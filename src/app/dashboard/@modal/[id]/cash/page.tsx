@@ -6,8 +6,9 @@ import { calculateTotalFromCashJson } from '@/components/Dashboard/types';
 import CashFormModal from '@/components/Cash/CashFormModal';
 import type { CashReport } from '@prisma/client';
 
-export default async function DashboardCashModal({ params }: { params: { id: string } }) {
-  // Risolvi i parametri in modo asincrono come nelle altre modali
+// Aggiornato per Next.js 15 - i params ora sono una Promise
+export default async function DashboardCashModal({ params }: { params: Promise<{ id: string }> }) {
+  // Risolvi i parametri in modo asincrono
   const resolvedParams = await params;
   const id = parseInt(resolvedParams.id);
   

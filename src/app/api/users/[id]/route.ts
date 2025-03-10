@@ -4,14 +4,15 @@ import { getServerSession } from 'next-auth';
 import { prisma } from '@/lib/db';
 import { authOptions } from '@/lib/auth-options';
 
+// Aggiornato per Next.js 15
 interface RouteParams {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 // GET /api/users/[id] - Ottieni un utente specifico
-export async function GET(request: Request, { params }: RouteParams) {
+export async function GET(request: Request, context: RouteParams) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -24,8 +25,8 @@ export async function GET(request: Request, { params }: RouteParams) {
     }
 
     // Accesso asincrono ai parametri in Next.js 15
-    const { id } = await params;
-    const userId = parseInt(id);
+    const params = await context.params;
+    const userId = parseInt(params.id);
     if (isNaN(userId)) {
       return NextResponse.json(
         { message: 'ID utente non valido' },
@@ -63,7 +64,7 @@ export async function GET(request: Request, { params }: RouteParams) {
 }
 
 // PUT /api/users/[id] - Aggiorna un utente
-export async function PUT(request: Request, { params }: RouteParams) {
+export async function PUT(request: Request, context: RouteParams) {
   try {
     const session = await getServerSession(authOptions);
     
@@ -76,8 +77,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
     }
 
     // Accesso asincrono ai parametri in Next.js 15
-    const { id } = await params;
-    const userId = parseInt(id);
+    const params = await context.params;
+    const userId = parseInt(params.id);
     if (isNaN(userId)) {
       return NextResponse.json(
         { message: 'ID utente non valido' },
