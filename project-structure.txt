@@ -1,6 +1,7 @@
 .
 ├── backup_pre_migration_20250219_234346.sql
 ├── eslint.config.mjs
+├── middleware.ts
 ├── next.config.ts
 ├── next-env.d.ts
 ├── next-pwa.d.ts
@@ -16,6 +17,8 @@
 │   │   ├── 20250220002730_unify_show_datetime
 │   │   │   └── migration.sql
 │   │   ├── 20250308000000_manual_add_notifications
+│   │   │   └── migration.sql
+│   │   ├── 20250318000000_manual_add_cascade_delete
 │   │   │   └── migration.sql
 │   │   └── migration_lock.toml
 │   ├── migrations_backup
@@ -124,6 +127,8 @@
 │   │   ├── shows
 │   │   │   ├── layout.tsx
 │   │   │   ├── @modal
+│   │   │   │   ├── bulk
+│   │   │   │   │   └── page.tsx
 │   │   │   │   ├── default.tsx
 │   │   │   │   ├── [id]
 │   │   │   │   │   ├── cash
@@ -167,6 +172,8 @@
 │   │   ├── Providers
 │   │   │   └── SessionProvider.tsx
 │   │   ├── Shows
+│   │   │   ├── BulkShowsFormModal.tsx
+│   │   │   ├── BulkShowsForm.tsx
 │   │   │   ├── ManageCashButton.tsx
 │   │   │   ├── ShowFilters.tsx
 │   │   │   ├── ShowFormModal.tsx
@@ -211,4 +218,4 @@
 ├── tailwind.config.ts
 └── tsconfig.json
 
-76 directories, 135 files
+78 directories, 140 files

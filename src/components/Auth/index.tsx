@@ -1,25 +1,62 @@
 //  src/components/Auth/index.tsx
-
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 
+interface User {
+  id: number;
+  username: string;
+}
+
 export const LoginForm = () => {
+  const [users, setUsers] = useState<User[]>([]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/auth/users');
+        
+        if (!response.ok) {
+          throw new Error('Errore nel caricamento degli utenti');
+        }
+        
+        const data = await response.json();
+        setUsers(data);
+      } catch (error) {
+        console.error('Errore nel caricamento degli utenti:', error);
+        setError('Impossibile caricare la lista degli utenti');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUsers();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!username || !password) {
+      setError('Inserisci username e password');
+      return;
+    }
+    
+    // Rimuovi eventuali spazi bianchi all'inizio e alla fine
+    const cleanUsername = username.trim();
+    
     const result = await signIn('credentials', {
-      username,
+      username: cleanUsername,
       password,
       redirect: false
     });
@@ -68,23 +105,32 @@ export const LoginForm = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">
             <div>
-              <label htmlFor="username" className="sr-only">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1">
                 Username
               </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="Username"
-              />
+              {isLoading ? (
+                <div className="animate-pulse h-10 bg-gray-200 rounded-md"></div>
+              ) : (
+                <select
+                  id="username"
+                  name="username"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                >
+                  <option value="">Seleziona un utente</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.username}>
+                      {user.username}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
             
             <div className="relative">
-              <label htmlFor="password" className="sr-only">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
                 Password
               </label>
               <input
@@ -100,7 +146,7 @@ export const LoginForm = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                className="absolute bottom-0 right-0 pr-3 flex items-center h-10"
               >
                 {showPassword ? (
                   <EyeOff className="h-5 w-5 text-gray-400" />
@@ -115,6 +161,7 @@ export const LoginForm = () => {
             <button
               type="submit"
               className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              disabled={isLoading}
             >
               Accedi
             </button>
@@ -205,7 +252,7 @@ export const FirstAccessForm = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm space-y-4">
             <div className="relative">
-              <label htmlFor="new-password" className="sr-only">
+              <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">
                 Nuova Password
               </label>
               <input
@@ -222,7 +269,7 @@ export const FirstAccessForm = () => {
             </div>
 
             <div className="relative">
-              <label htmlFor="confirm-password" className="sr-only">
+              <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
                 Conferma Password
               </label>
               <input
@@ -239,7 +286,7 @@ export const FirstAccessForm = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                className="absolute bottom-0 right-0 pr-3 flex items-center h-10"
               >
                 {showPassword ? (
                   <EyeOff className="h-5 w-5 text-gray-400" />
