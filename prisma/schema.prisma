@@ -60,7 +60,7 @@ model Availability {
   notes     String?  @db.Text
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  show      Show     @relation(fields: [showId], references: [id]) // Nome ripristinato
+  show      Show     @relation(fields: [showId], references: [id], onDelete: Cascade) // Nome ripristinato
   user      User     @relation(fields: [userId], references: [id]) // Nome ripristinato
 
   @@unique([showId, userId])

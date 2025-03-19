@@ -1,5 +1,4 @@
 //  src/components/ui/NotificationToggle.tsx
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -21,14 +20,35 @@ export default function NotificationToggle() {
   // Verifica se le notifiche sono supportate e se l'utente è già iscritto
   useEffect(() => {
     const checkNotificationStatus = async () => {
+      console.log('NotificationToggle - Controllo supporto notifiche');
       const supported = isPushNotificationSupported();
+      console.log('NotificationToggle - Supporto notifiche:', supported);
       setIsSupported(supported);
       
       if (supported) {
-        const subscription = await getSubscription();
-        setIsSubscribed(!!subscription);
+        try {
+          console.log('NotificationToggle - Controllo subscription esistente');
+          
+          // Aggiungi un timeout per evitare che si blocchi indefinitamente
+          const subscriptionPromise = getSubscription();
+          const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout nel recupero della subscription')), 3000)
+          );
+          
+          const subscription = await Promise.race([subscriptionPromise, timeoutPromise])
+            .catch(error => {
+              console.warn('NotificationToggle - Timeout o errore nel recupero subscription:', error);
+              return null;
+            });
+            
+          console.log('NotificationToggle - Subscription esistente:', !!subscription);
+          setIsSubscribed(!!subscription);
+        } catch (error) {
+          console.error('NotificationToggle - Errore controllo subscription:', error);
+        }
       }
       
+      // Assicurati che isLoading diventi false in ogni caso
       setIsLoading(false);
     };
     
@@ -43,6 +63,7 @@ export default function NotificationToggle() {
       setIsLoading(true);
       
       if (isSubscribed) {
+        console.log('NotificationToggle - Tentativo di annullare sottoscrizione');
         await unsubscribeFromPush();
         setIsSubscribed(false);
         toast({
@@ -50,6 +71,7 @@ export default function NotificationToggle() {
           description: "Non riceverai più notifiche push da questo dispositivo."
         });
       } else {
+        console.log('NotificationToggle - Tentativo di sottoscrizione');
         await subscribeToPush();
         setIsSubscribed(true);
         toast({
@@ -79,7 +101,8 @@ export default function NotificationToggle() {
       </div>
     );
   }
-  
+
+  // Rendering normale del bottone
   return (
     <Button
       variant="outline"

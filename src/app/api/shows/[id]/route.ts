@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from "@/lib/db"
 import { z } from "zod"
+import { notifyEventModified, notifyEventCancelled } from "@/lib/server-notifications"; // Importato i moduli di notifica
 
 // Tipo aggiornato per Next.js 15
 type RouteParams = { params: Promise<{ id: string }> }
@@ -72,8 +73,29 @@ export async function PUT(request: NextRequest, context: RouteParams) {
     const params = await context.params;
     const showId = parseInt(params.id)
 
+    // Ottieni le informazioni dello spettacolo prima della modifica
+    const existingShow = await prisma.show.findUnique({
+      where: { id: showId },
+      include: { film: true }
+    });
+
+    if (!existingShow) {
+      return NextResponse.json({ error: "Show not found" }, { status: 404 })
+    }
+
     const json = await request.json()
-    const validatedData = updateShowSchema.parse(json)
+    
+    // Estrai l'opzione sendNotification, di default è true
+    const sendNotification = json.sendNotification !== false;
+    
+    // Crea una copia dei dati senza il campo sendNotification
+    const dataToValidate = { ...json };
+    // Rimuovi sendNotification se presente
+    if ('sendNotification' in dataToValidate) {
+      delete dataToValidate.sendNotification;
+    }
+    
+    const validatedData = updateShowSchema.parse(dataToValidate)
 
     // Prepariamo i dati per l'update
     const updateData: {
@@ -85,7 +107,7 @@ export async function PUT(request: NextRequest, context: RouteParams) {
     
     if (validatedData.datetime) updateData.datetime = new Date(validatedData.datetime)
     if (validatedData.filmId) updateData.filmId = validatedData.filmId
-    if (validatedData.bolId) updateData.bolId = validatedData.bolId
+    if (validatedData.bolId !== undefined) updateData.bolId = validatedData.bolId
     if (validatedData.notes !== undefined) updateData.notes = validatedData.notes
 
     const show = await prisma.show.update({
@@ -102,13 +124,22 @@ export async function PUT(request: NextRequest, context: RouteParams) {
       }
     })
 
+    // Invia notifica a tutti gli utenti per la modifica dello spettacolo
+    // solo se l'opzione è attivata
+    if (sendNotification) {
+      await notifyEventModified(prisma, showId, show.film.title, show.datetime);
+    }
+
     // Formattiamo la risposta
     const formattedShow = {
       ...show,
       datetime: show.datetime.toISOString()
     }
 
-    return NextResponse.json(formattedShow)
+    return NextResponse.json({
+      ...formattedShow,
+      notificationSent: sendNotification
+    })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.errors }, { status: 400 })
@@ -128,9 +159,25 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
     const params = await context.params;
     const showId = parseInt(params.id)
 
+    // Estrai l'opzione sendNotification, di default è true
+    let sendNotification = true;
+    try {
+      const body = await request.text();
+      if (body) {
+        const json = JSON.parse(body);
+        sendNotification = json.sendNotification !== false;
+      }
+    } catch {
+      // Se il body è vuoto o non è un JSON valido, usa il default (true)
+      console.log("No valid request body in DELETE, using default notification setting");
+    }
+
     const show = await prisma.show.findUnique({
       where: { id: showId },
-      include: { cashReport: true }
+      include: { 
+        cashReport: true,
+        film: true
+      }
     })
 
     if (!show) {
@@ -144,11 +191,19 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
       )
     }
 
+    // Prima di eliminare lo spettacolo, invia una notifica di cancellazione
+    if (sendNotification) {
+      await notifyEventCancelled(prisma, show.film.title, show.datetime);
+    }
+
     await prisma.show.delete({
       where: { id: showId }
     })
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ 
+      success: true,
+      notificationSent: sendNotification
+    })
   } catch (error) {
     console.error(error)
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })

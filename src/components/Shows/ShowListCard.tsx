@@ -65,7 +65,11 @@ export default function ShowListCard({ shows }: ShowListCardProps) {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('it-IT', {
       style: 'currency',
-      currency: 'EUR'
+      currency: 'EUR',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+      // Forza la visualizzazione del separatore delle migliaia
+      useGrouping: true
     }).format(amount || 0);
   };
 
@@ -177,12 +181,20 @@ export default function ShowListCard({ shows }: ShowListCardProps) {
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <Button asChild>
-            <Link href="/shows/new">
-              <Plus className="h-4 w-4 mr-2" />
-              Nuovo Spettacolo
-            </Link>
-          </Button>
+          <div className="flex space-x-2">
+            <Button asChild>
+              <Link href="/shows/new">
+                <Plus className="h-4 w-4 mr-2" />
+                Nuovo Spettacolo
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/shows/bulk">
+                <Plus className="h-4 w-4 mr-2" />
+                Creazione Multipla
+              </Link>
+            </Button>
+          </div>
         </div>
         <div className="rounded-md border p-8 text-center text-gray-500">
           Nessuno spettacolo trovato
@@ -203,12 +215,20 @@ export default function ShowListCard({ shows }: ShowListCardProps) {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button asChild>
-          <Link href="/shows/new">
-            <Plus className="h-4 w-4 mr-2" />
-            Nuovo Spettacolo
-          </Link>
-        </Button>
+        <div className="flex space-x-2">
+          <Button asChild>
+            <Link href="/shows/new">
+              <Plus className="h-4 w-4 mr-2" />
+              Nuovo Spettacolo
+            </Link>
+          </Button>
+          <Button asChild variant="outline">
+              <Link href="/shows/bulk">
+                <Plus className="h-4 w-4 mr-2" />
+                Creazione Multipla
+              </Link>
+            </Button>
+          </div>
       </div>
 
       <div className="rounded-md border">

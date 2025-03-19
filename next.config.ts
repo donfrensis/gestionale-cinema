@@ -1,15 +1,30 @@
 import type { NextConfig } from "next";
-import nextPWA from 'next-pwa';
+import withPWA from "@ducanh2912/next-pwa";
 
-const withPWA = nextPWA({
-  dest: 'public',
-  disable: process.env.NODE_ENV === 'development',
-  register: true,
-  skipWaiting: true
-});
-
+// @ts-check
 const nextConfig: NextConfig = {
   reactStrictMode: true,
 };
 
-export default withPWA(nextConfig);
+export default withPWA({
+  dest: "public",
+  register: true,
+  disable: process.env.NODE_ENV === "development",
+  // Opzioni per la cache
+  cacheOnFrontEndNav: true,
+  reloadOnOnline: true,
+  // Fallback per la pagina offline
+  fallbacks: {
+    document: '/offline.html'
+  },
+  // Opzioni di Workbox
+  workboxOptions: {
+    skipWaiting: true,
+    clientsClaim: true,
+    // Escludi file problematici
+    exclude: [
+      /chunks\/app\/dashboard\/@modal/,
+      /app-build-manifest\.json$/
+    ]
+  }
+})(nextConfig);

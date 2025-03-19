@@ -1,5 +1,4 @@
 //  src/lib/push-client.ts
-
 'use client';
 
 // Funzione per verificare se il browser supporta le notifiche push
@@ -33,6 +32,12 @@ export async function registerServiceWorker() {
   }
   
   try {
+    // Controlla se c'è già una registrazione attiva
+    const existingRegistrations = await navigator.serviceWorker.getRegistrations();
+    if (existingRegistrations.length > 0) {
+      return existingRegistrations[0];
+    }
+    
     return await navigator.serviceWorker.register('/sw.js');
   } catch (error) {
     console.error('Errore nella registrazione del service worker:', error);
@@ -47,8 +52,19 @@ export async function getSubscription() {
   }
   
   try {
-    const registration = await navigator.serviceWorker.ready;
-    return await registration.pushManager.getSubscription();
+    // Controlla se c'è già una registrazione attiva
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    
+    if (registrations.length === 0) {
+      // Se non ci sono registrazioni, prova a registrare il service worker
+      const registration = await registerServiceWorker();
+      if (!registration) return null;
+      
+      return await registration.pushManager.getSubscription();
+    }
+    
+    // Usa la prima registrazione disponibile
+    return await registrations[0].pushManager.getSubscription();
   } catch (error) {
     console.error('Errore nel recupero della subscription:', error);
     return null;
@@ -74,10 +90,18 @@ export async function subscribeToPush() {
       throw new Error('Permesso per le notifiche non concesso');
     }
     
-    // Registra il service worker se non è già registrato
-    const registration = await registerServiceWorker();
-    if (!registration) {
-      throw new Error('Impossibile registrare il service worker');
+    // Registra il service worker
+    console.log('Registrazione service worker...');
+    let registration = await navigator.serviceWorker.register('/sw.js');
+    console.log('Service worker registrato');
+    
+    // Forza l'attivazione se possibile
+    if (registration.waiting) {
+      console.log('Service worker in attesa, invio messaggio di attivazione...');
+      registration.waiting.postMessage({type: 'SKIP_WAITING'});
+      
+      // Attendi un momento per permettere l'elaborazione del messaggio
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
     
     // Recupera la chiave pubblica VAPID
@@ -86,16 +110,51 @@ export async function subscribeToPush() {
       throw new Error('Chiave VAPID pubblica non disponibile');
     }
     
-    // Crea una nuova subscription
-    const subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
-    });
-    
-    // Invia la subscription al server
-    await saveSubscriptionToServer(subscription);
-    
-    return subscription;
+    // Prova a ottenere il pushManager anche se il service worker non è completamente attivato
+    console.log('Tentativo di creazione subscription...');
+    try {
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+      });
+      
+      console.log('Subscription creata con successo');
+      
+      // Invia la subscription al server
+      await saveSubscriptionToServer(subscription);
+      
+      return subscription;
+    } catch (pushError) {
+      console.error('Errore nella creazione della subscription:', pushError);
+      
+      // Se fallisce, prova un approccio alternativo: forzare l'aggiornamento
+      console.log('Tentativo alternativo di registro del service worker...');
+      await registration.update();
+      
+      // Attendi per dare tempo al browser di elaborare l'aggiornamento
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Riprova ad ottenere tutte le registrazioni
+      const registrations = await navigator.serviceWorker.getRegistrations();
+      if (registrations.length === 0) {
+        throw new Error('Nessun service worker registrato dopo il tentativo alternativo');
+      }
+      
+      registration = registrations[0];
+      
+      // Tenta di nuovo la subscription
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+      });
+      
+      console.log('Subscription creata con successo (tentativo alternativo)');
+      
+      // Invia la subscription al server
+      await saveSubscriptionToServer(subscription);
+      
+      return subscription;
+    }
   } catch (error) {
     console.error('Errore nella sottoscrizione alle notifiche push:', error);
     throw error;

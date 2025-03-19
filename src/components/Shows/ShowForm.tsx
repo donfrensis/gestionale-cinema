@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch" // Importa il componente Switch
 import { useToast } from "@/components/ui/use-toast"
 import { X, Save } from 'lucide-react'
 
@@ -23,6 +24,7 @@ export default function ShowForm({ show, onClose }: ShowFormProps) {
   const [loading, setLoading] = useState(false)
   const [films, setFilms] = useState<Film[]>([])
   const [mounted, setMounted] = useState(false)
+  const [sendNotification, setSendNotification] = useState(true) // Nuovo stato per l'opzione di notifica
 
   // Inizializza i dati del form
   const [formData, setFormData] = useState<CreateShowInput>({
@@ -52,7 +54,7 @@ export default function ShowForm({ show, onClose }: ShowFormProps) {
     } else {
       // Se stiamo creando un nuovo show
       const now = new Date()
-      now.setHours(20, 30, 0, 0)
+      now.setHours(21, 15, 0, 0)
       // Formatta la data come YYYY-MM-DDTHH:mm
       const dateStr = 
         now.getFullYear() + '-' +
@@ -76,10 +78,16 @@ export default function ShowForm({ show, onClose }: ShowFormProps) {
           throw new Error("Errore nel caricamento dei film")
         }
         const data = await response.json()
-        setFilms(data)
-        // Se non è un edit e ci sono film, imposta il primo film
-        if (!show && data.length > 0) {
-          setFormData(prev => ({ ...prev, filmId: data[0].id }))
+        
+        // Ordina i film per createdAt in ordine decrescente (i più recenti prima)
+        const sortedFilms = [...data].sort((a, b) => {
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        });
+        
+        setFilms(sortedFilms)
+        // Se non è un edit e ci sono film, imposta il primo film (che ora sarà il più recente)
+        if (!show && sortedFilms.length > 0) {
+          setFormData(prev => ({ ...prev, filmId: sortedFilms[0].id }))
         }
       } catch (err) {
         toast({
@@ -100,10 +108,16 @@ export default function ShowForm({ show, onClose }: ShowFormProps) {
       const url = show ? `/api/shows/${show.id}` : "/api/shows"
       const method = show ? "PUT" : "POST"
 
+      // Aggiungi l'opzione sendNotification ai dati inviati
+      const dataToSend = {
+        ...formData,
+        sendNotification // Aggiungi l'opzione di notifica
+      }
+
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dataToSend)
       })
 
       const responseData = await response.json()
@@ -120,7 +134,8 @@ export default function ShowForm({ show, onClose }: ShowFormProps) {
         title: show ? "Spettacolo modificato" : "Spettacolo creato",
         description: show 
           ? "Le modifiche sono state salvate con successo"
-          : "Il nuovo spettacolo è stato creato con successo"
+          : "Il nuovo spettacolo è stato creato con successo" +
+            (sendNotification ? " e la notifica è stata inviata" : " senza inviare notifiche")
       })
 
       // Forziamo il refresh prima di chiudere
@@ -214,6 +229,18 @@ export default function ShowForm({ show, onClose }: ShowFormProps) {
             placeholder="Note aggiuntive"
             rows={2}
           />
+        </div>
+
+        {/* Nuovo campo per l'opzione di notifica */}
+        <div className="flex items-center space-x-2 pt-3 border-t">
+          <Switch
+            id="sendNotification"
+            checked={sendNotification}
+            onCheckedChange={setSendNotification}
+          />
+          <Label htmlFor="sendNotification" className="cursor-pointer">
+            Invia notifica agli operatori
+          </Label>
         </div>
       </div>
 

@@ -15,10 +15,22 @@
 │   │   │   └── migration.sql
 │   │   ├── 20250220002730_unify_show_datetime
 │   │   │   └── migration.sql
+│   │   ├── 20250308000000_manual_add_notifications
+│   │   │   └── migration.sql
 │   │   └── migration_lock.toml
-│   └── schema.prisma
+│   ├── migrations_backup
+│   │   ├── 20250127235147_add_availability_and_cash_management
+│   │   │   └── migration.sql
+│   │   ├── 20250127235641_add_availability_and_cash_management
+│   │   │   └── migration.sql
+│   │   ├── 20250220002730_unify_show_datetime
+│   │   │   └── migration.sql
+│   │   └── migration_lock.toml
+│   ├── schema.prisma
+│   └── schema.prisma.backup
 ├── project-structure.txt
 ├── public
+│   ├── fallback-ce627215c0e4a9af.js
 │   ├── icons
 │   │   ├── file.svg
 │   │   ├── globe.svg
@@ -29,7 +41,9 @@
 │   │   └── window.svg
 │   ├── manifest.json
 │   ├── offline.html
-│   └── sw.js
+│   ├── swe-worker-5c72df51bb1f6ee0.js
+│   ├── sw.js
+│   └── workbox-f1770938.js
 ├── README.md
 ├── src
 │   ├── app
@@ -39,9 +53,6 @@
 │   │   │   │   │   └── route.ts
 │   │   │   │   └── [...nextauth]
 │   │   │   │       └── route.ts
-│   │   │   ├── availability
-│   │   │   │   ├── notifications
-│   │   │   │   └── subscribe
 │   │   │   ├── cash
 │   │   │   │   ├── close
 │   │   │   │   │   └── [id]
@@ -55,6 +66,11 @@
 │   │   │   │   │   └── route.ts
 │   │   │   │   └── route.ts
 │   │   │   ├── liveticket
+│   │   │   ├── push
+│   │   │   │   ├── send
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── subscription
+│   │   │   │       └── route.ts
 │   │   │   ├── shows
 │   │   │   │   ├── available
 │   │   │   │   │   └── route.ts
@@ -164,7 +180,9 @@
 │   │   │   ├── input.tsx
 │   │   │   ├── label.tsx
 │   │   │   ├── NotificationToggle.tsx
+│   │   │   ├── PwaInstallBanner.tsx
 │   │   │   ├── select.tsx
+│   │   │   ├── SimpleNotificationToggle.tsx
 │   │   │   ├── switch.tsx
 │   │   │   ├── table.tsx
 │   │   │   ├── tabs.tsx
@@ -179,10 +197,12 @@
 │   │       ├── WithdrawalsDeposits.tsx
 │   │       └── WithdrawalsSummary.tsx
 │   ├── lib
+│   │   ├── auth-options.ts
 │   │   ├── auth.ts
 │   │   ├── db.ts
 │   │   ├── notifications.ts
 │   │   ├── push-client.ts
+│   │   ├── server-notifications.ts
 │   │   └── utils.ts
 │   └── types
 │       ├── films.ts
@@ -191,4 +211,4 @@
 ├── tailwind.config.ts
 └── tsconfig.json
 
-71 directories, 120 files
+76 directories, 135 files
