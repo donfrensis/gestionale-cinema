@@ -1,7 +1,6 @@
 .
 ├── backup_pre_migration_20250219_234346.sql
 ├── eslint.config.mjs
-├── middleware.ts
 ├── next.config.ts
 ├── next-env.d.ts
 ├── next-pwa.d.ts
@@ -54,7 +53,9 @@
 │   │   │   ├── auth
 │   │   │   │   ├── change-password
 │   │   │   │   │   └── route.ts
-│   │   │   │   └── [...nextauth]
+│   │   │   │   ├── [...nextauth]
+│   │   │   │   │   └── route.ts
+│   │   │   │   └── users
 │   │   │   │       └── route.ts
 │   │   │   ├── cash
 │   │   │   │   ├── close
@@ -211,6 +212,7 @@
 │   │   ├── push-client.ts
 │   │   ├── server-notifications.ts
 │   │   └── utils.ts
+│   ├── middleware.ts
 │   └── types
 │       ├── films.ts
 │       ├── next-auth.d.ts
@@ -218,4 +220,4 @@
 ├── tailwind.config.ts
 └── tsconfig.json
 
-78 directories, 140 files
+79 directories, 141 files

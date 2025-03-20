@@ -1,4 +1,4 @@
-//  src/app/api/shows/available/route.ts
+// src/app/api/shows/available/route.ts
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { auth } from '@/lib/auth'
@@ -12,15 +12,13 @@ export async function POST() {
 
     const now = new Date()
     
-    // Troviamo il giovedì precedente
-    const prevThursday = new Date()
-    prevThursday.setDate(now.getDate() - ((now.getDay() + 3) % 7))
-    prevThursday.setHours(0, 0, 0, 0)
-
+    // Ora invece di filtrare in base al giovedì precedente,
+    // filtriamo solo in base alla data corrente
+    // per ottenere tutti gli spettacoli futuri
     const shows = await prisma.show.findMany({
       where: {
         datetime: {
-          gte: prevThursday
+          gte: now // Prendi tutti gli spettacoli da ora in poi
         }
       },
       include: {
@@ -45,7 +43,7 @@ export async function POST() {
         }
       },
       orderBy: {
-        datetime: 'asc'
+        datetime: 'asc' // Ordina dal più vicino al più lontano
       },
     })
 

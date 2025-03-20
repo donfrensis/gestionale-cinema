@@ -49,7 +49,7 @@ export default async function AvailabilityLayout({
         </h1>
         <div className="flex items-center space-x-2">
           <NotificationToggle />
-          <Link href="/profile">
+          <Link href="">
             <Button variant="secondary" className="p-0 h-10 w-10">
               <Settings className="h-5 w-5" />
             </Button>

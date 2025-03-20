@@ -35,15 +35,15 @@ export default function Navbar() {
 
  const navigation: NavigationItem[] = [
    // { name: 'Home', href: '/', icon: Home },
-   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+   { name: 'Cassa', href: '/dashboard', icon: LayoutDashboard },
    ...(session.user?.isAdmin ? [
-     { name: 'Shows', href: '/shows', icon: TvMinimalPlay },
+     { name: 'Spettacoli', href: '/shows', icon: TvMinimalPlay },
      { name: 'Films', href: '/films', icon: Film },
-     { name: 'Users', href: '/users', icon: Users },
+     { name: 'Utenti', href: '/users', icon: Users },
      { name: 'Reports', href: '/reports', icon: FileText },
      { name: 'Prel./Vers.', href: '/withdrawals', icon: Banknote },
+     { name: 'Disponibilità', href: '/availability', icon: Calendar },
    ] : []),
-   { name: 'Availability', href: '/availability', icon: Calendar },
  ];
 
  const handleLogout = () => {

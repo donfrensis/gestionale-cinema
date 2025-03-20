@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import FilmList from '@/components/Films/FilmList'
 
 export const metadata = {
-  title: 'Gestione Film - Cinema Management',
+  title: 'Gestione Film',
 }
 
 export default async function FilmsPage() {
