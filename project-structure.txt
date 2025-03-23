@@ -157,6 +157,7 @@
 │   ├── components
 │   │   ├── Auth
 │   │   │   └── index.tsx
+│   │   ├── AutoLogout.tsx
 │   │   ├── Availability
 │   │   │   └── AvailabilityCalendar.tsx
 │   │   ├── Cash
@@ -225,4 +226,4 @@
 ├── tailwind.config.ts
 └── tsconfig.json
 
-82 directories, 143 files
+82 directories, 144 files

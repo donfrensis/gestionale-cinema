@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import AuthProvider from '@/components/Providers/SessionProvider';
+import AutoLogout from '@/components/AutoLogout';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -42,6 +43,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <AuthProvider>
+          <AutoLogout timeoutMinutes={15} mobileDisabled={true} logoutOnWindowClose={true}/>
           {children}
         </AuthProvider>
       </body>
