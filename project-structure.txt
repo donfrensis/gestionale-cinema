@@ -127,8 +127,6 @@
 │   │   │   │       └── page.tsx
 │   │   │   └── page.tsx
 │   │   ├── globals.css
-│   │   ├── integrations
-│   │   │   └── sumup
 │   │   ├── layout.tsx
 │   │   ├── page.tsx
 │   │   ├── shows
@@ -229,4 +227,4 @@
 ├── tailwind.config.ts
 └── tsconfig.json
 
-83 directories, 146 files
+81 directories, 146 files
