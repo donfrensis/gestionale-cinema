@@ -107,6 +107,10 @@ export default async function DashboardCashModal({ params }: { params: Promise<{
     } else {
       console.log("No show with closed cash report found");
     }
+  } else if (show.cashReport && show.cashReport.openingCash) {
+    // Calcolo per chiusura
+    expectedOpeningTotal = Number(calculateTotalFromCashJson(show.cashReport.openingCash));
+    console.log("Opening cash total for closing:", expectedOpeningTotal);
   }
 
   return (
