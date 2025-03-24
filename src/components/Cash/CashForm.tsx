@@ -75,6 +75,13 @@ export function CashForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>("cash");
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(['cash']));
+  const requiredTabs = ['cash', 'pos', 'liveticket', 'totals'];
+  const allTabsVisited = requiredTabs.every(tab => visitedTabs.has(tab));
+    const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setVisitedTabs(prev => new Set([...prev, value]));
+  };
 
   // Stato per i conteggi cassa
   const [cashData, setCashData] = useState<CashBreakdown>({
@@ -156,6 +163,10 @@ export function CashForm({
   }, [showId, type]);
 
   // Carica i dati da BOL LiveTicket
+  const [originalBolValues, setOriginalBolValues] = useState({
+    ticketTotal: 0,
+    subscriptionTotal: 0
+  });
   const loadBolData = useCallback(async () => {
     if (type !== 'closing') return;
     
@@ -173,6 +184,12 @@ export function CashForm({
       const data = await response.json();
       setBolData(data);
       
+      // Salva i valori originali
+      setOriginalBolValues({
+        ticketTotal: data.ticketTotal,
+        subscriptionTotal: data.subscriptionTotal
+      });
+
       // Aggiorna automaticamente i campi con i dati di BOL
       setClosingData(prev => ({
         ...prev,
@@ -269,12 +286,30 @@ export function CashForm({
       )}
 
       {type === 'closing' ? (
-        <Tabs defaultValue="cash" value={activeTab} onValueChange={setActiveTab}>
+        <Tabs defaultValue="cash" value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="w-full mb-4">
+            <TabsTrigger value="cash" className="flex-1">
+              Contanti
+              {visitedTabs.has('cash') && <span className="ml-1 text-xs text-green-500">✓</span>}
+            </TabsTrigger>
+            <TabsTrigger value="pos" className="flex-1">
+              SumUp POS
+              {visitedTabs.has('pos') && <span className="ml-1 text-xs text-green-500">✓</span>}
+            </TabsTrigger>
+            <TabsTrigger value="liveticket" className="flex-1">
+              BOL LiveTicket
+              {visitedTabs.has('liveticket') && <span className="ml-1 text-xs text-green-500">✓</span>}
+            </TabsTrigger>
+            <TabsTrigger value="totals" className="flex-1">
+              Totali
+              {visitedTabs.has('totals') && <span className="ml-1 text-xs text-green-500">✓</span>}
+            </TabsTrigger>
+            {/*
             <TabsTrigger value="cash" className="flex-1">Contanti</TabsTrigger>
             <TabsTrigger value="pos" className="flex-1">SumUp POS</TabsTrigger>
             <TabsTrigger value="liveticket" className="flex-1">BOL LiveTicket</TabsTrigger>
-            <TabsTrigger value="totals" className="flex-1">Totali</TabsTrigger>
+            <TabsTrigger value="totals" className="flex-1">Quadratura</TabsTrigger>
+            */}
           </TabsList>
           
           <TabsContent value="cash">
@@ -399,7 +434,7 @@ export function CashForm({
                     </div>
                     <div className="mt-4">
                       <Label className="block mb-2">
-                        Totale POS (auto-compilato da SumUp)
+                        Totale POS (è possibile modificare il valore auto-compilato da SumUp)
                       </Label>
                       <Input
                         type="number"
@@ -511,8 +546,8 @@ export function CashForm({
                     
                     <div className="mt-6 space-y-4">
                       <div>
-                        <Label className="block mb-2 text-red-500">
-                          Totale Biglietti (auto-compilato da BOL)
+                        <Label className="block mb-2">
+                          Totale Biglietti (è possibile modificare il valore auto-compilato da BOL)
                         </Label>
                         <Input
                           type="number"
@@ -528,7 +563,7 @@ export function CashForm({
                       
                       <div>
                         <Label className="block mb-2">
-                          Totale Abbonamenti (auto-compilato da BOL)
+                          Totale Abbonamenti (è possibile modificare il valore auto-compilato da BOL)
                         </Label>
                         <Input
                           type="number"
@@ -554,27 +589,29 @@ export function CashForm({
               <div>
                 <h3 className="font-medium text-lg mb-4">Quadratura Cassa</h3>
       
-                <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                  <h4 className="font-medium mb-3">Riepilogo Incassi</h4>
+                <div className="bg-green-100 p-4 rounded-lg mb-6">
+                  <h4 className="font-medium mb-3 text-blue-700">Riepilogo Incassi</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span>Contanti finali:</span>
+                      <span>Contanti alla chiusura:</span>
                       <span className="font-medium">{calculateTotal().toFixed(2)}€</span>
                     </div>
                     {expectedOpeningTotal !== null && (
                       <div className="flex justify-between text-gray-500">
-                        <span>Fondo cassa iniziale:</span>
+                        <span>Contanti all&apos;apertura:</span>
                         <span>-{expectedOpeningTotal.toFixed(2)}€</span>
                       </div>
                     )}
                     {expectedOpeningTotal !== null && (
-                      <div className="flex justify-between font-medium">
-                        <span>Incasso contanti:</span>
-                        <span>{(calculateTotal() - expectedOpeningTotal).toFixed(2)}€</span>
-                      </div>
+                      <div className="border-t pt-2 mt-2">
+                        <div className="flex justify-between font-medium">
+                          <span>Incasso contanti:</span>
+                          <span>{(calculateTotal() - expectedOpeningTotal).toFixed(2)}€</span>
+                        </div>
+                      </div>  
                     )}
                     <div className="flex justify-between">
-                      <span>POS (SumUp):</span>
+                      <span>Incasso POS (SumUp):</span>
                       <span className="font-medium">{closingData.posTotal.toFixed(2)}€</span>
                     </div>
                     <div className="border-t pt-2 mt-2">
@@ -592,22 +629,32 @@ export function CashForm({
                   </div>
                 </div>
       
-                <div className="bg-gray-50 p-4 rounded-lg mb-6">
-                  <h4 className="font-medium mb-3">Vendite Registrate (BOL LiveTicket)</h4>
+                <div className="bg-red-100 p-4 rounded-lg mb-6">
+                  <h4 className="font-medium mb-3 text-blue-700">Riepilogo Vendite</h4>
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span>Biglietti:</span>
+                      <span>Biglietti:
+                      <span className="text-xs text-gray-500 ml-2">
+                        {(closingData.ticketSystemTotal === originalBolValues.ticketTotal || 
+                          (closingData.ticketSystemTotal === 0 && originalBolValues.ticketTotal === 0))
+                          ? "(da BOL LiveTicket)" 
+                          : "(inserito manualmente)"}
+                      </span></span>
                       <span className="font-medium">{closingData.ticketSystemTotal.toFixed(2)}€</span>
-                      <span className="text-xs text-gray-500 ml-2">(da BOL LiveTicket)</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Abbonamenti:</span>
+                      <span>Abbonamenti:
+                      <span className="text-xs text-gray-500 ml-2">
+                        {(closingData.subscriptionTotal === originalBolValues.subscriptionTotal || 
+                          (closingData.subscriptionTotal === 0 && originalBolValues.subscriptionTotal === 0))
+                          ? "(da BOL LiveTicket)" 
+                          : "(inserito manualmente)"}
+                      </span></span>
                       <span className="font-medium">{closingData.subscriptionTotal.toFixed(2)}€</span>
-                      <span className="text-xs text-gray-500 ml-2">(da BOL LiveTicket)</span>
                     </div>
                     <div className="border-t pt-2 mt-2">
                       <div className="flex justify-between font-medium">
-                        <span>Totale Vendite Registrate:</span>
+                        <span>Totale Vendite:</span>
                         <span>{(closingData.ticketSystemTotal + closingData.subscriptionTotal).toFixed(2)}€</span>
                       </div>
                     </div>
@@ -628,7 +675,7 @@ export function CashForm({
                       )}
                     </div>
                     <div className="flex justify-between text-lg">
-                      <span>Registrato in BOL:</span>
+                      <span>Venduto:</span>
                       <span className="font-medium">{(closingData.ticketSystemTotal + closingData.subscriptionTotal).toFixed(2)}€</span>
                     </div>
                     <div className="border-t pt-2 mt-2">
@@ -654,55 +701,6 @@ export function CashForm({
                         );
                       })()}
                     </div>
-                  </div>
-                </div>
-              </div>
-    
-              <div className="border-t pt-4">
-                <h3 className="font-medium mb-3">Campi di Input (compilati automaticamente)</h3>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label className="block">
-                      Totale Biglietti (BOL LiveTicket)
-                    </Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={closingData.ticketSystemTotal || ''}
-                      onChange={(e) => setClosingData(prev => ({
-                        ...prev,
-                        ticketSystemTotal: e.target.value === '' ? 0 : parseFloat(e.target.value)
-                      }))}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Totale Abbonamenti (BOL LiveTicket)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={closingData.subscriptionTotal || ''}
-                      onChange={(e) => setClosingData(prev => ({
-                        ...prev,
-                        subscriptionTotal: e.target.value === '' ? 0 : parseFloat(e.target.value)
-                      }))}
-                    />
-                  </div>
-        
-                  <div className="space-y-2">
-                    <Label>Incasso Bancomat (SumUp)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={closingData.posTotal || ''}
-                      onChange={(e) => setClosingData(prev => ({
-                        ...prev,
-                        posTotal: e.target.value === '' ? 0 : parseFloat(e.target.value)
-                      }))}
-                    />
                   </div>
                 </div>
               </div>
@@ -778,11 +776,16 @@ export function CashForm({
         </Button>
         <Button 
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || (type === 'closing' && !allTabsVisited)}
           className="gap-2"
         >
           <Calculator className="w-4 h-4" />
           {type === 'opening' ? 'Registra Apertura' : 'Registra Chiusura'}
+          {type === 'closing' && !allTabsVisited && (
+            <span className="text-xs ml-1">
+              (controlla tutte le schede)
+            </span>
+          )}
         </Button>
       </div>
     </form>
