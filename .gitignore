@@ -44,3 +44,9 @@ next-env.d.ts
 helper_ssl
 helper_ssl.tar.gz
 rbot
+
+# PWA generated files
+public/sw.js
+public/workbox-*.js
+public/swe-worker-*.js
+public/fallback-*.js
