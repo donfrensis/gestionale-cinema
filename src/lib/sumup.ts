@@ -137,10 +137,10 @@ export class SumUpService {
       
       // Calcola la finestra temporale esatta: 30 minuti prima e dopo l'inizio
       const startTime = new Date(showDateTime);
-      startTime.setMinutes(startTime.getMinutes() - 30); // 30 minuti prima
+      startTime.setMinutes(startTime.getMinutes() - 45); // 30 minuti prima
       
       const endTime = new Date(showDateTime);
-      endTime.setMinutes(endTime.getMinutes() + 30); // 30 minuti dopo
+      endTime.setMinutes(endTime.getMinutes() + 60); // 30 minuti dopo
       
       // Log per debug in formato italiano
       const formatIT = (date: Date) => {

@@ -226,6 +226,60 @@ export function CashForm({
     }
   }, [type, loadSumupTransactions, loadBolData]);
 
+  // Carica i valori dei contanti se stiamo visualizzando una cassa già chiusa
+  useEffect(() => {
+    // Se stiamo visualizzando un report di cassa chiuso (ha già closingCash)
+    if (type === 'closing' && currentReport?.closingCash) {
+      try {
+        // Converti il JSON in oggetto se necessario
+        const closingCashData = typeof currentReport.closingCash === 'string'
+          ? JSON.parse(currentReport.closingCash)
+          : currentReport.closingCash;
+        
+        // Imposta lo stato cashData con i valori dal database
+        setCashData({
+          "50": Number(closingCashData['50'] || 0),
+          "20": Number(closingCashData['20'] || 0),
+          "10": Number(closingCashData['10'] || 0),
+          "5": Number(closingCashData['5'] || 0),
+          "2": Number(closingCashData['2'] || 0),
+          "1": Number(closingCashData['1'] || 0),
+          "050": Number(closingCashData['050'] || 0),
+          other: Number(closingCashData.other || 0)
+        });
+      } catch (error) {
+        console.error("Errore nel caricamento dei dati contanti:", error);
+      }
+      
+      // Se ci sono dati relativi al POS, caricali
+      if (currentReport.posTotal) {
+        setClosingData(prev => ({
+          ...prev,
+          posTotal: Number(currentReport.posTotal)
+        }));
+      }
+      
+      // Se ci sono dati relativi ai biglietti, caricali
+      if (currentReport.ticketTotal) {
+        setClosingData(prev => ({
+          ...prev,
+          ticketSystemTotal: Number(currentReport.ticketTotal)
+        }));
+      }
+      
+      // Se ci sono dati relativi agli abbonamenti, caricali
+      if (currentReport.subscriptionTotal) {
+        setClosingData(prev => ({
+          ...prev,
+          subscriptionTotal: Number(currentReport.subscriptionTotal)
+        }));
+      }
+      
+      // Marca tutte le tab come visitate per visualizzare la quadratura
+      setVisitedTabs(new Set(['cash', 'pos', 'liveticket', 'totals']));
+    }
+  }, [type, currentReport]);
+
   // Gestisce il submit del form
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,12 +358,6 @@ export function CashForm({
               Totali
               {visitedTabs.has('totals') && <span className="ml-1 text-xs text-green-500">✓</span>}
             </TabsTrigger>
-            {/*
-            <TabsTrigger value="cash" className="flex-1">Contanti</TabsTrigger>
-            <TabsTrigger value="pos" className="flex-1">SumUp POS</TabsTrigger>
-            <TabsTrigger value="liveticket" className="flex-1">BOL LiveTicket</TabsTrigger>
-            <TabsTrigger value="totals" className="flex-1">Quadratura</TabsTrigger>
-            */}
           </TabsList>
           
           <TabsContent value="cash">

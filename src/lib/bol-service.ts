@@ -118,12 +118,12 @@ export async function getBolTicketData(showDate: string, showTime: string): Prom
     // Converti la data e l'ora in un oggetto Date
     const showDateTime = new Date(`${showDate}T${showTime}`);
     
-    // Calcola l'inizio e la fine del periodo (30 minuti prima e dopo)
+    // Calcola l'inizio e la fine del periodo (30 minuti prima e 45 dopo)
     const startTime = new Date(showDateTime);
-    startTime.setMinutes(startTime.getMinutes() - 30);
+    startTime.setMinutes(startTime.getMinutes() - 45);
     
     const endTime = new Date(showDateTime);
-    endTime.setMinutes(endTime.getMinutes() + 30);
+    endTime.setMinutes(endTime.getMinutes() + 60);
     
     // Formatta le date e le ore per BOL
     const bolDate = formatBolDate(showDateTime);
