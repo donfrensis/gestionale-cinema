@@ -20,7 +20,7 @@ export default function ShowFilters({ onDateFilterChange, dateFilter }: ShowFilt
   return (
     <div className="flex items-center gap-4">
       <Select value={dateFilter} onValueChange={(value: DateFilter) => onDateFilterChange(value)}>
-        <SelectTrigger className="w-[180px]">
+        <SelectTrigger className="w-45">
           <SelectValue placeholder="Seleziona periodo" />
         </SelectTrigger>
         <SelectContent>
