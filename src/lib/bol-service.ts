@@ -202,6 +202,162 @@ export async function getBolTicketData(showDate: string, showTime: string): Prom
   }
 }
 
+// ---------------------------------------------------------------------------
+// IMPORT FILM DA BOL
+// ---------------------------------------------------------------------------
+
+/**
+ * Dati di un film estratti da BOL
+ */
+export interface BolFilmData {
+  bolId: number;
+  title: string;
+  duration?: number | null;
+  cinetelId?: string | null;
+  nationality?: string | null;
+  producer?: string | null;
+  distributor?: string | null;
+  posterUrl?: string | null;
+  myMoviesUrl?: string | null;
+}
+
+/**
+ * Recupera la lista di tutti i film dal catalogo BOL (opere_principale.asp)
+ */
+export async function getBolFilmsList(): Promise<Pick<BolFilmData, 'bolId' | 'title'>[]> {
+  const { baseUrl } = getBolConfig();
+  const cookies = await loginBol();
+
+  const response = await fetch(`${baseUrl}/opere_principale.asp`, {
+    headers: { 'Cookie': cookies.join('; ') },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Impossibile recuperare la lista film da BOL (stato: ${response.status})`);
+  }
+
+  const html = await response.text();
+  return parseBolFilmsListHtml(html);
+}
+
+/**
+ * Recupera i dettagli di un singolo film da BOL (opera_crea.asp)
+ */
+export async function getBolFilmDetails(bolId: number): Promise<BolFilmData> {
+  const { baseUrl } = getBolConfig();
+  const theaterId = process.env.BOL_THEATER_ID || '3871';
+  const cookies = await loginBol();
+
+  const url = `${baseUrl}/opera_crea.asp?ID_Teatro=${theaterId}&ID=${bolId}&Op=Apri&Archiviati=0`;
+  const response = await fetch(url, {
+    headers: { 'Cookie': cookies.join('; ') },
+    cache: 'no-store',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Impossibile recuperare i dettagli del film ${bolId} da BOL (stato: ${response.status})`);
+  }
+
+  const html = await response.text();
+  return parseBolFilmDetailsHtml(bolId, html);
+}
+
+/**
+ * Analizza l'HTML di opere_principale.asp per estrarre la lista film.
+ *
+ * La pagina BOL tipicamente presenta una tabella con link del tipo:
+ *   opera_crea.asp?ID_Teatro=3871&ID=285137&Op=Apri
+ * Da cui estraiamo bolId e il testo del link come titolo.
+ */
+function parseBolFilmsListHtml(html: string): Pick<BolFilmData, 'bolId' | 'title'>[] {
+  const root = parse(html);
+  const films: Pick<BolFilmData, 'bolId' | 'title'>[] = [];
+  const seen = new Set<number>();
+
+  // Cerca tutti i link che puntano a opera_crea.asp con parametro ID=
+  const links = root.querySelectorAll('a[href*="opera_crea.asp"]');
+  for (const link of links) {
+    const href = link.getAttribute('href') || '';
+    const idMatch = href.match(/[?&]ID=(\d+)/i);
+    if (!idMatch) continue;
+
+    const bolId = parseInt(idMatch[1]);
+    if (!bolId || seen.has(bolId)) continue;
+    seen.add(bolId);
+
+    const title = link.textContent.trim();
+    if (!title) continue;
+
+    films.push({ bolId, title });
+  }
+
+  return films;
+}
+
+/**
+ * Analizza l'HTML di opera_crea.asp per estrarre i dettagli del film.
+ * Usa i nomi esatti dei campi presenti nel form BOL.
+ */
+function parseBolFilmDetailsHtml(bolId: number, html: string): BolFilmData {
+  const root = parse(html);
+
+  const getInputValue = (name: string): string | null => {
+    // Cerca prima per name, poi per id
+    let el = root.querySelector(`input[name="${name}"], textarea[name="${name}"]`);
+    if (!el) {
+      el = root.querySelector(`input[id="${name}"], textarea[id="${name}"]`);
+    }
+    
+    if (!el) return null;
+    
+    // Prova a ottenere il valore in diversi modi (per gestire readonly, disabled, ecc.)
+    const value = el.getAttribute('value') || 
+                  el.attrs?.value || 
+                  el.textContent?.trim();
+    
+    return value?.trim() || null;
+  };
+
+  // Estrai i campi usando i nomi esatti del form BOL
+  const title = getInputValue('Titolo') || '';
+  const durationRaw = getInputValue('Durata');
+  const duration = durationRaw ? parseInt(durationRaw) || null : null;
+  const cinetelId = getInputValue('CodCinetelEffettivo') || null;
+  const nationality = getInputValue('Naz') || null;
+  const producer = getInputValue('Produttore') || null;
+  const distributor = getInputValue('DistFilm') || null;
+
+  // Poster: cerca un tag <img> con src che contenga "poster" o "locandina"
+  const posterImg = root.querySelector('img[src*="poster"], img[src*="locandina"], img[src*="cover"]');
+  const posterSrc = posterImg?.getAttribute('src') || null;
+  let posterUrl: string | null = null;
+  if (posterSrc) {
+    const { baseUrl } = getBolConfig();
+    posterUrl = posterSrc.startsWith('http') ? posterSrc : `${baseUrl}/${posterSrc.replace(/^\//, '')}`;
+  }
+
+  // Link MyMovies: cerca <a> con href che contenga "mymovies"
+  const myMoviesLink = root.querySelector('a[href*="mymovies"]');
+  const myMoviesUrl = myMoviesLink?.getAttribute('href') || null;
+
+  return {
+    bolId,
+    title,
+    duration,
+    cinetelId,
+    nationality,
+    producer,
+    distributor,
+    posterUrl,
+    myMoviesUrl,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// INCASSI
+// ---------------------------------------------------------------------------
+
 /**
  * Analizza l'HTML della pagina degli incassi di BOL per estrarre i dati di vendita
  */

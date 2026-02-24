@@ -30,6 +30,11 @@ model Film {
   cinetelId    String?
   description  String?  @db.Text
   notes        String?  @db.Text
+  nationality  String?
+  producer     String?
+  distributor  String?
+  posterUrl    String?  @db.VarChar(500)
+  myMoviesUrl  String?  @db.VarChar(500)
   createdAt    DateTime @default(now())
   importedFrom String?
   shows        Show[]   // Nome relazione ripristinato

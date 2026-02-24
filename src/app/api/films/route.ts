@@ -80,7 +80,12 @@ export async function POST(request: Request) {
         bolId: data.bolId,
         cinetelId: data.cinetelId,
         description: data.description?.trim() || null,
-        notes: data.notes?.trim() || null
+        notes: data.notes?.trim() || null,
+        nationality: data.nationality?.trim() || null,
+        producer: data.producer?.trim() || null,
+        distributor: data.distributor?.trim() || null,
+        posterUrl: data.posterUrl?.trim() || null,
+        myMoviesUrl: data.myMoviesUrl?.trim() || null,
       }
     })
 

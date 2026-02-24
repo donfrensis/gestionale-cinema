@@ -8,6 +8,11 @@ export type FilmFormData = {
   cinetelId?: string | null
   description?: string | null
   notes?: string | null
+  nationality?: string | null
+  producer?: string | null
+  distributor?: string | null
+  posterUrl?: string | null
+  myMoviesUrl?: string | null
 }
 
 export type FilmWithShows = Film & {

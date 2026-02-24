@@ -23,6 +23,11 @@ interface FormData {
   cinetelId: string
   description: string
   notes: string
+  nationality: string
+  producer: string
+  distributor: string
+  posterUrl: string
+  myMoviesUrl: string
 }
 
 export default function FilmForm({ film, onClose }: FilmFormProps) {
@@ -35,7 +40,12 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
     bolId: film?.bolId || null,
     cinetelId: film?.cinetelId || '',
     description: film?.description || '',
-    notes: film?.notes || ''
+    notes: film?.notes || '',
+    nationality: film?.nationality || '',
+    producer: film?.producer || '',
+    distributor: film?.distributor || '',
+    posterUrl: film?.posterUrl || '',
+    myMoviesUrl: film?.myMoviesUrl || '',
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -65,6 +75,7 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
       })
 
       router.refresh()
+      window.dispatchEvent(new Event('refreshFilmList'))
       onClose()
     } catch (error) {
       toast({
@@ -160,6 +171,71 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
             }))}
             placeholder="Note aggiuntive"
             rows={2}
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="nationality">Nazionalità</Label>
+          <Input
+            id="nationality"
+            value={formData.nationality}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              nationality: e.target.value
+            }))}
+            placeholder="Es. Italia, USA"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="producer">Produttore</Label>
+          <Input
+            id="producer"
+            value={formData.producer}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              producer: e.target.value
+            }))}
+            placeholder="Casa di produzione"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="distributor">Distributore</Label>
+          <Input
+            id="distributor"
+            value={formData.distributor}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              distributor: e.target.value
+            }))}
+            placeholder="Casa di distribuzione"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="posterUrl">URL Locandina</Label>
+          <Input
+            id="posterUrl"
+            value={formData.posterUrl}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              posterUrl: e.target.value
+            }))}
+            placeholder="https://..."
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="myMoviesUrl">URL MyMovies</Label>
+          <Input
+            id="myMoviesUrl"
+            value={formData.myMoviesUrl}
+            onChange={(e) => setFormData(prev => ({
+              ...prev,
+              myMoviesUrl: e.target.value
+            }))}
+            placeholder="https://www.mymovies.it/..."
           />
         </div>
       </div>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { Film } from '@prisma/client'
 import { useToast } from '@/components/ui/use-toast'
+import BolImportButton from '@/components/Films/BolImportButton'
 
 type SortConfig = {
  key: keyof Film
@@ -19,6 +20,7 @@ export default function FilmList() {
  const [loading, setLoading] = useState(true)
  const [error, setError] = useState<string | null>(null)
  const [filterText, setFilterText] = useState('')
+ const [refreshKey, setRefreshKey] = useState(0)
  const [sortConfig, setSortConfig] = useState<SortConfig>({
    key: 'createdAt',
    direction: 'desc'
@@ -46,7 +48,14 @@ export default function FilmList() {
    }
 
    fetchFilms()
- }, [toast])
+ }, [toast, refreshKey])
+
+ // Event listener per il refresh della lista
+  useEffect(() => {
+    const handleRefresh = () => setRefreshKey(k => k + 1)
+    window.addEventListener('refreshFilmList', handleRefresh)
+    return () => window.removeEventListener('refreshFilmList', handleRefresh)
+  }, [])
 
  const handleSort = (key: keyof Film) => {
    setSortConfig(prevConfig => ({
@@ -126,6 +135,7 @@ export default function FilmList() {
           onChange={(e) => setFilterText(e.target.value)}
         />
       </div>
+      <BolImportButton />
       <Button asChild>
         <Link href="/films/new">
           <Plus className="h-4 w-4 mr-2" />
