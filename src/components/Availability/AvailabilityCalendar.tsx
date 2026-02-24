@@ -169,7 +169,7 @@ export default function AvailabilityCalendar({ isAdmin }: { isAdmin: boolean }) 
                  
                  {show.notes && (
                    <div className="flex items-start space-x-2 text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                     <MessageSquare className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                     <MessageSquare className="h-4 w-4 mt-0.5 shrink-0" />
                      <span>{show.notes}</span>
                    </div>
                  )}
