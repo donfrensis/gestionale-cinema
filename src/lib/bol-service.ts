@@ -355,6 +355,109 @@ function parseBolFilmDetailsHtml(bolId: number, html: string): BolFilmData {
 }
 
 // ---------------------------------------------------------------------------
+// IMPORT SHOWS DA BOL
+// ---------------------------------------------------------------------------
+
+/**
+ * Dati di uno show estratti dalla pagina spett_principale.asp di BOL
+ */
+export interface BolShowData {
+  bolId: number;
+  filmBolId: number;   // ID Opera (link opera_crea.asp) per il matching con film.bolId
+  filmTitle: string;
+  date: string;        // formato DD/MM/YYYY
+  time: string;        // formato HH.MM
+}
+
+/**
+ * Recupera la lista degli spettacoli dalla pagina principale di BOL
+ */
+export async function getBolShowsList(): Promise<BolShowData[]> {
+  const { baseUrl } = getBolConfig();
+  const theaterId = process.env.BOL_THEATER_ID || '3871';
+  const cookies = await loginBol();
+
+  const response = await fetch(
+    `${baseUrl}/spett_principale.asp?ID_Teatro=${theaterId}`,
+    { headers: { 'Cookie': cookies.join('; ') }, cache: 'no-store' }
+  );
+
+  if (!response.ok) {
+    throw new Error(`Impossibile recuperare gli shows da BOL (stato: ${response.status})`);
+  }
+
+  const html = await response.text();
+  return parseBolShowsListHtml(html);
+}
+
+/**
+ * Analizza l'HTML di spett_principale.asp per estrarre la lista degli spettacoli.
+ *
+ * Ogni riga ha la struttura:
+ *   <td><a href="javascript:ApriGenerali(3871, 1337, 0)" title="Titolo Film">...</a></td>
+ *   <td align="center">02/03/2026</td>
+ *   <td align="center">20.30</td>
+ *   <td><a href="/opera_crea.asp?ID_Teatro=3871&ID=285138&...">Opera</a></td>
+ */
+function parseBolShowsListHtml(html: string): BolShowData[] {
+  const root = parse(html);
+  const shows: BolShowData[] = [];
+  const seen = new Set<number>();
+
+  const links = root.querySelectorAll('a[href*="ApriGenerali"]');
+  
+  for (const link of links) {
+    const href = link.getAttribute('href') || '';
+    const idMatch = href.match(/ApriGenerali\(\d+,\s*(\d+)/);
+    if (!idMatch) continue;
+
+    const bolId = parseInt(idMatch[1]);
+    if (!bolId || seen.has(bolId)) continue;
+    seen.add(bolId);
+
+    const filmTitle = link.getAttribute('title') || link.textContent.trim();
+
+    const row = link.closest('tr');
+    if (!row) continue;
+
+    const cells = row.querySelectorAll('td');
+    
+    // Cerca la cella con la data (formato DD/MM/YYYY)
+    let date = '';
+    let time = '';
+    
+    for (let i = 0; i < cells.length; i++) {
+      const text = cells[i].textContent.trim();
+      // Cerca formato data DD/MM/YYYY
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(text)) {
+        date = text;
+        // L'ora è nella cella successiva
+        if (i + 1 < cells.length) {
+          time = cells[i + 1].textContent.trim();
+        }
+        break;
+      }
+    }
+    
+    if (!date || !time) continue;
+
+    // Cerca il link opera_crea.asp in tutta la riga
+    const operaLink = row.querySelector('a[href*="opera_crea.asp"]');
+    if (!operaLink) continue;
+
+    const operaHref = operaLink.getAttribute('href') || '';
+    const operaIdMatch = operaHref.match(/[?&]ID=(\d+)/i);
+    if (!operaIdMatch) continue;
+
+    const filmBolId = parseInt(operaIdMatch[1]);
+
+    shows.push({ bolId, filmBolId, filmTitle, date, time });
+  }
+
+  return shows;
+}
+
+// ---------------------------------------------------------------------------
 // INCASSI
 // ---------------------------------------------------------------------------
 

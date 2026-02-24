@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Show } from '@/components/Dashboard/types';
+import BolImportShowsButton from './BolImportShowsButton';
 
 interface ShowListCardProps {
   shows: Show[];
@@ -194,6 +195,7 @@ export default function ShowListCard({ shows }: ShowListCardProps) {
                 Creazione Multipla
               </Link>
             </Button>
+            <BolImportShowsButton />
           </div>
         </div>
         <div className="rounded-md border p-8 text-center text-gray-500">
@@ -228,6 +230,7 @@ export default function ShowListCard({ shows }: ShowListCardProps) {
                 Creazione Multipla
               </Link>
             </Button>
+          <BolImportShowsButton />
           </div>
       </div>
 
