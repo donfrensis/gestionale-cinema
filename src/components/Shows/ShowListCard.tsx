@@ -9,7 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { Show } from '@/components/Dashboard/types';
-import BolImportShowsButton from './BolImportShowsButton';
+import BolImportShowsButton from './BolImportShowsButton'
+import GenerateMessagesButton from './GenerateMessagesButton';
 
 interface ShowListCardProps {
   shows: Show[];
@@ -196,6 +197,7 @@ export default function ShowListCard({ shows }: ShowListCardProps) {
               </Link>
             </Button>
             <BolImportShowsButton />
+            <GenerateMessagesButton />
           </div>
         </div>
         <div className="rounded-md border p-8 text-center text-gray-500">
@@ -231,6 +233,7 @@ export default function ShowListCard({ shows }: ShowListCardProps) {
               </Link>
             </Button>
           <BolImportShowsButton />
+            <GenerateMessagesButton />
           </div>
       </div>
 

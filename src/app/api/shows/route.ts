@@ -20,14 +20,28 @@ const bulkCreateSchema = z.object({
   sendNotification: z.boolean().default(true) // Opzione per l'admin di decidere se inviare la notifica
 })
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    const { searchParams } = new URL(request.url)
+    const startParam = searchParams.get('start')
+    const endParam = searchParams.get('end')
+
+    const whereClause = startParam || endParam
+      ? {
+          datetime: {
+            ...(startParam ? { gte: new Date(startParam + 'T00:00:00') } : {}),
+            ...(endParam   ? { lte: new Date(endParam   + 'T23:59:59') } : {}),
+          },
+        }
+      : undefined
+
     const shows = await prisma.show.findMany({
+      where: whereClause,
       include: {
         film: true,
         operator: true,
@@ -38,7 +52,7 @@ export async function GET() {
         }
       },
       orderBy: {
-        datetime: 'desc'
+        datetime: startParam || endParam ? 'asc' : 'desc'
       }
     })
 
