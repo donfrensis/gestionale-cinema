@@ -13,6 +13,9 @@ export type FilmFormData = {
   distributor?: string | null
   posterUrl?: string | null
   myMoviesUrl?: string | null
+  director?: string | null
+  italianReleaseDate?: string | null  // ISO string o null (il DB vuole DateTime)
+  genre?: string | null
 }
 
 export type FilmWithShows = Film & {

@@ -23,21 +23,24 @@ model User {
 }
 
 model Film {
-  id           Int      @id @default(autoincrement())
-  title        String
-  duration     Int?     // Questo era già nullable
-  bolId        Int?
-  cinetelId    String?
-  description  String?  @db.Text
-  notes        String?  @db.Text
-  nationality  String?
-  producer     String?
-  distributor  String?
-  posterUrl    String?  @db.VarChar(500)
-  myMoviesUrl  String?  @db.VarChar(500)
-  createdAt    DateTime @default(now())
-  importedFrom String?
-  shows        Show[]   // Nome relazione ripristinato
+  id                  Int       @id @default(autoincrement())
+  title               String
+  duration            Int?      // Questo era già nullable
+  bolId               Int?
+  cinetelId           String?
+  description         String?   @db.Text
+  notes               String?   @db.Text
+  nationality         String?
+  producer            String?
+  distributor         String?
+  posterUrl           String?   @db.VarChar(500)
+  myMoviesUrl         String?   @db.VarChar(500)
+  director            String?
+  italianReleaseDate  DateTime?
+  genre               String?
+  createdAt           DateTime  @default(now())
+  importedFrom        String?
+  shows               Show[]    // Nome relazione ripristinato
 }
 
 model Show {

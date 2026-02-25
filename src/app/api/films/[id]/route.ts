@@ -126,6 +126,9 @@ export async function PUT(request: Request, context: RouteParams) {
        distributor: data.distributor?.trim() || null,
        posterUrl: data.posterUrl?.trim() || null,
        myMoviesUrl: data.myMoviesUrl?.trim() || null,
+       director: data.director?.trim() || null,
+       italianReleaseDate: data.italianReleaseDate ? new Date(data.italianReleaseDate) : null,
+       genre: data.genre?.trim() || null,
      }
    })
 

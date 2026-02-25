@@ -5,6 +5,7 @@ export interface ShowForMessage {
     title: string
     duration: number | null
     myMoviesUrl: string | null
+    director: string | null
   }
 }
 
@@ -80,14 +81,14 @@ function generateWhatsAppMessage(weekShows: ShowForMessage[]): string {
 
   for (const { film, shows } of filmMap.values()) {
     lines.push(`*${film.title.toUpperCase()}*`)
-    lines.push(`_di [regista]_`)
+    if (film.director) lines.push(`di ${film.director}`)
     if (film.duration) lines.push(`_durata ${film.duration}'_`)
     lines.push('')
 
     for (const show of shows) {
       const d = new Date(show.datetime)
       const dayAbbr = IT_DAY_ABBR[d.getDay()]
-      const dayNum = d.getDate()
+      const dayNum = String(d.getDate()).padStart(2, ' ')
       const time = formatTime(show.datetime)
       const notesSuffix = show.notes?.trim() ? ` ${show.notes.trim()}` : ''
       lines.push(`\`\`\` ${dayAbbr} ${dayNum} - ore ${time}${notesSuffix}\`\`\``)
@@ -140,7 +141,8 @@ function generateEmailMessage(weekShows: ShowForMessage[], start: Date, end: Dat
         const time = formatTime(show.datetime, '.')
         const isVO = /vos|v\.o\./i.test(show.notes ?? '')
         const voSuffix = isVO ? ' (V.O. sottot. in italiano)' : ''
-        return `- ${show.film.title.toUpperCase()}${voSuffix} - ore ${time}`
+        const directorPart = show.film.director ? ` di ${show.film.director}` : ''
+        return `- ${show.film.title.toUpperCase()}${directorPart}${voSuffix} - ore ${time}`
       })
       dayParts.push(`${heading}\n${showLines.join('\n')}`)
     } else {
