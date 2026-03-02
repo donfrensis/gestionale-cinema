@@ -90,8 +90,7 @@ function generateWhatsAppMessage(weekShows: ShowForMessage[]): string {
       const dayAbbr = IT_DAY_ABBR[d.getDay()]
       const dayNum = String(d.getDate()).padStart(2, ' ')
       const time = formatTime(show.datetime)
-      const notesSuffix = show.notes?.trim() ? ` ${show.notes.trim()}` : ''
-      lines.push(`\`\`\` ${dayAbbr} ${dayNum} - ore ${time}${notesSuffix}\`\`\``)
+      lines.push(`\`\`\` ${dayAbbr} ${dayNum} - ore ${time}\`\`\``)
     }
 
     lines.push('')
@@ -139,10 +138,8 @@ function generateEmailMessage(weekShows: ShowForMessage[], start: Date, end: Dat
       )
       const showLines = sorted.map(show => {
         const time = formatTime(show.datetime, '.')
-        const isVO = /vos|v\.o\./i.test(show.notes ?? '')
-        const voSuffix = isVO ? ' (V.O. sottot. in italiano)' : ''
         const directorPart = show.film.director ? ` di ${show.film.director}` : ''
-        return `- ${show.film.title.toUpperCase()}${directorPart}${voSuffix} - ore ${time}`
+        return `- ${show.film.title.toUpperCase()}${directorPart} - ore ${time}`
       })
       dayParts.push(`${heading}\n${showLines.join('\n')}`)
     } else {

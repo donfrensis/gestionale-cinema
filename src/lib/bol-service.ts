@@ -458,6 +458,251 @@ function parseBolShowsListHtml(html: string): BolShowData[] {
 }
 
 // ---------------------------------------------------------------------------
+// CARTELLONE BOL
+// ---------------------------------------------------------------------------
+
+/**
+ * Riga del cartellone BOL estratta dalla pagina incassi.asp (raggruppamento per titolo ed evento)
+ */
+export interface BolCartelloneRow {
+  datetime: Date;
+  titolo: string;
+  emessi: number;
+  annullati: number;
+  venduti: number;
+  imponibile: number;
+  iva: number;
+  totale: number;
+}
+
+/**
+ * Recupera i dati del cartellone BOL per un intervallo di date.
+ * Chiama incassi.asp con raggruppamento "titolo ed evento" (IncPerTitoloSpett=1).
+ * @param dataInizio - formato "DD/MM/YYYY"
+ * @param dataFine   - formato "DD/MM/YYYY"
+ */
+export async function getBolCartellone(
+  dataInizio: string,
+  dataFine: string
+): Promise<{ success: boolean; rows: BolCartelloneRow[]; error?: string }> {
+  try {
+    const cookies = await loginBol();
+    const { baseUrl } = getBolConfig();
+
+    const baseParams = {
+      CF_Organizzatore: '*',
+      ID_TeatroMulti: '*',
+      HelperData: dataInizio,
+      DataInizio: dataInizio,
+      OraInizio: '00.00',
+      DataFine: dataFine,
+      OraFine: '23.59',
+      ID_Spettacolo: '*',
+      TxtDescOperatore: '(tutti gli operatori)',
+      ID_PuntoVendita: '*',
+      ID_Cassa: '*',
+      TxtTitoloOpera: '(tutti i titoli)',
+      CodTipoCanale: '*',
+      ID_Rivenditore: '*',
+      ID_Iniziativa: '0',
+      IncProvBO: '1',
+      IncProvVO: '1',
+      IncProvPVGO: '1',
+      IncProvPVCL: '1',
+      IncSenzaIvaPreassolta: '1',
+      IncConIvaPreassolta: '1',
+      IncConIvaPreassoltaBa: '1',
+      IncSenzaTessPrep: '1',
+      IncConTessPrep: '1',
+      UsaFormatoEsportabile: '1',
+      postback: '1',
+    };
+
+    const incassiUrl = `${baseUrl}/servizio/incassi.asp`;
+    const fetchOpts = (extra: Record<string, string>) => ({
+      method: 'POST' as const,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Cookie': cookies.join('; '),
+      },
+      body: new URLSearchParams({ ...baseParams, ...extra }).toString(),
+      cache: 'no-store' as const,
+    });
+
+    // BOL risponde in Windows-1252: decodificare manualmente per preservare
+    // i caratteri accentati italiani (à, è, é, ì, ò, ù).
+    const decode1252 = async (res: Response) => {
+      const buf = await res.arrayBuffer();
+      return new TextDecoder('windows-1252').decode(buf);
+    };
+
+    // Richiesta 1 — Biglietti (con UsaFormatoEsportabile: table inside <pre>)
+    const respBiglietti = await fetch(incassiUrl, fetchOpts({ IncPerTitoloSpett: '1' }));
+    if (!respBiglietti.ok) throw new Error(`Richiesta biglietti BOL fallita: ${respBiglietti.status}`);
+    const htmlBiglietti = await decode1252(respBiglietti);
+    const rowsBiglietti = parseCartelloneHtml(htmlBiglietti);
+
+    // Richiesta 2 — Abbonamenti SENZA UsaFormatoEsportabile (incompatibile con IncPerDataAbb)
+    const { UsaFormatoEsportabile: _fmtExport, ...baseParamsNoExport } = baseParams; // eslint-disable-line @typescript-eslint/no-unused-vars
+    const fetchOptsAbb = (extra: Record<string, string>) => ({
+      method: 'POST' as const,
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Cookie': cookies.join('; '),
+      },
+      body: new URLSearchParams({ ...baseParamsNoExport, ...extra }).toString(),
+      cache: 'no-store' as const,
+    });
+    const respAbbonamenti = await fetch(incassiUrl, fetchOptsAbb({ IncPerDataAbb: '1' }));
+    if (!respAbbonamenti.ok) throw new Error(`Richiesta abbonamenti BOL fallita: ${respAbbonamenti.status}`);
+    const htmlAbbonamenti = await decode1252(respAbbonamenti);
+    const rowsAbbonamenti = parseAbbonnamentiHtml(htmlAbbonamenti);
+
+    console.log('[BOL] biglietti:', rowsBiglietti.length, '| abbonamenti:', rowsAbbonamenti.length);
+
+    // Unisce e ordina per datetime crescente
+    const rows = [...rowsBiglietti, ...rowsAbbonamenti].sort(
+      (a, b) => a.datetime.getTime() - b.datetime.getTime()
+    );
+
+    return { success: true, rows };
+  } catch (error) {
+    console.error('Errore durante il recupero del cartellone BOL:', error);
+    return {
+      success: false,
+      rows: [],
+      error: error instanceof Error ? error.message : 'Errore sconosciuto',
+    };
+  }
+}
+
+/**
+ * Analizza l'HTML della risposta di incassi.asp (formato esportabile, raggruppamento per titolo ed evento).
+ * Cerca la <table> dentro il <pre> che segue il commento <!-- PER TITOLO ED EVENTO -->.
+ * Ogni <tr> ha 9 <td>: titolo, data/ora, emessi, annullati, venduti, imponibile, iva, totale, prevendita.
+ */
+function parseCartelloneHtml(html: string): BolCartelloneRow[] {
+  const rows: BolCartelloneRow[] = [];
+
+  // Trova il blocco dopo <!-- PER TITOLO ED EVENTO -->
+  const markerIndex = html.indexOf('<!-- PER TITOLO ED EVENTO -->');
+  const searchHtml = markerIndex >= 0 ? html.slice(markerIndex) : html;
+
+  const root = parse(searchHtml);
+
+  // node-html-parser tratta il contenuto di <pre> come testo grezzo (non parsato).
+  // Recuperiamo il raw innerHTML e lo ri-parsiamo come HTML separatamente.
+  const pre = root.querySelector('pre');
+  if (!pre) return rows;
+
+  const tableRoot = parse(pre.innerHTML);
+  const table = tableRoot.querySelector('table');
+  if (!table) return rows;
+
+  const trs = tableRoot.querySelectorAll('tr');
+  for (const tr of trs) {
+    const tds = tr.querySelectorAll('td');
+    if (tds.length < 8) continue;
+
+    const titolo = tds[0].textContent.trim();
+    const dataOraRaw = tds[1].textContent.trim(); // "DD/MM/YYYY HH.MM"
+    const emessiRaw = tds[2].textContent.trim();
+    const annullatiRaw = tds[3].textContent.trim();
+    const vendutoRaw = tds[4].textContent.trim();
+    const imponibileRaw = tds[5].textContent.trim();
+    const ivaRaw = tds[6].textContent.trim();
+    const totaleRaw = tds[7].textContent.trim();
+
+    // Salta righe intestazione o senza dati numerici
+    if (!dataOraRaw || !/\d{2}\/\d{2}\/\d{4}/.test(dataOraRaw)) continue;
+
+    // Converti "DD/MM/YYYY HH.MM" in Date
+    const dateMatch = dataOraRaw.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2})\.(\d{2})/);
+    if (!dateMatch) continue;
+    const [, dd, mm, yyyy, hh, min] = dateMatch;
+    const datetime = new Date(`${yyyy}-${mm}-${dd}T${hh}:${min}:00`);
+
+    const parseNum = (s: string) => parseFloat(s.replace(',', '.')) || 0;
+
+    rows.push({
+      datetime,
+      titolo,
+      emessi: parseNum(emessiRaw),
+      annullati: parseNum(annullatiRaw),
+      venduti: parseNum(vendutoRaw),
+      imponibile: parseNum(imponibileRaw),
+      iva: parseNum(ivaRaw),
+      totale: parseNum(totaleRaw),
+    });
+  }
+
+  return rows;
+}
+
+/**
+ * Analizza il testo a larghezza fissa della sezione <!-- PER DATA (ABBONAMENTI) -->.
+ * Il <pre> contiene righe nel formato:
+ *   DD/MM/YYYY    emessi    annullati    venduti    imponibile    iva    totale    prevendita
+ * Vengono incluse solo le righe che iniziano con una data DD/MM/YYYY.
+ */
+function parseAbbonnamentiHtml(html: string): BolCartelloneRow[] {
+  const rows: BolCartelloneRow[] = [];
+
+  // Ricerca flessibile del marker (tolera spazi variabili nel commento HTML)
+  const markerMatch = html.search(/<!--\s*PER DATA \(ABBONAMENTI\)\s*-->/i);
+  if (markerMatch < 0) return rows;
+
+  const searchHtml = html.slice(markerMatch);
+  const root = parse(searchHtml);
+
+  const pre = root.querySelector('pre');
+  if (!pre) return rows;
+
+  // node-html-parser tratta il contenuto di <pre> come testo grezzo: i tag HTML
+  // interni (<hr>, <span>) vengono restituiti come testo letterale.
+  // 1) Recupera il raw content (può contenere "<hr>", "<span>..." come stringhe)
+  // 2) Rimuove i tag HTML con una regex
+  // 3) Normalizza \u00a0 e altri whitespace non-standard in spazi ordinari
+  const rawText = pre.innerText || pre.textContent || '';
+  const text = rawText
+    .replace(/<[^>]+>/g, '')          // strip tag HTML rimasti come testo
+    .replace(/[\u00a0\u200b\r\t]+/g, ' ');
+  const lines = text.split('\n');
+
+  const dateLineRe = /^(\d{2})\/(\d{2})\/(\d{4})\s+(.+)$/;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const match = trimmed.match(dateLineRe);
+    if (!match) continue;
+
+    const [, dd, mm, yyyy, rest] = match;
+    const datetime = new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+
+    // Filtra parti vuote dopo lo split (doppi spazi residui)
+    const parts = rest.trim().split(/\s+/).filter(p => p.length > 0);
+    // Attesi almeno 7 campi: emessi annullati venduti imponibile iva totale prevendita
+    if (parts.length < 7) continue;
+
+    const parseNum = (s: string) => parseFloat(s.replace(',', '.')) || 0;
+
+    rows.push({
+      datetime,
+      titolo: 'Abbonamenti',
+      emessi:      parseNum(parts[0]),
+      annullati:   parseNum(parts[1]),
+      venduti:     parseNum(parts[2]),
+      imponibile:  parseNum(parts[3]),
+      iva:         parseNum(parts[4]),
+      totale:      parseNum(parts[5]),
+      // parts[6] = prevendita → ignorato
+    });
+  }
+
+  return rows;
+}
+
+// ---------------------------------------------------------------------------
 // INCASSI
 // ---------------------------------------------------------------------------
 
