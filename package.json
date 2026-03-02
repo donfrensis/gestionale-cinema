@@ -37,6 +37,9 @@
   "tailwindcss-animate": "^1.0.7",
   "web-push": "^3.6.7"
  },
+ "overrides": {
+  "serialize-javascript": ">=7.0.3"
+ },
  "devDependencies": {
   "@shadcn/ui": "^0.0.4",
   "@tailwindcss/postcss": "^4.0.0",
