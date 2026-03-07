@@ -2,12 +2,11 @@
 import { Inter } from 'next/font/google'
 import { getServerSession } from 'next-auth'
 import { redirect } from 'next/navigation'
-import { Settings, LogOut } from 'lucide-react'
-import Link from 'next/link'
+import { LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { authOptions } from '@/lib/auth-options';
 import Image from 'next/image';
-import NotificationToggle from '@/components/ui/NotificationToggle';
+import NotificationIconButton from '@/components/ui/NotificationIconButton';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -48,12 +47,7 @@ export default async function AvailabilityLayout({
           Servizio Cassa Cinema
         </h1>
         <div className="flex items-center space-x-2">
-          <NotificationToggle />
-          <Link href="">
-            <Button variant="secondary" className="p-0 h-10 w-10">
-              <Settings className="h-5 w-5" />
-            </Button>
-          </Link>
+          <NotificationIconButton />
           <form action="/api/auth/signout" method="POST">
             <Button variant="secondary" className="p-0 h-10 w-10">
               <LogOut className="h-5 w-5" />

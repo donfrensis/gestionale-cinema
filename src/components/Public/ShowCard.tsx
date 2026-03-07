@@ -6,6 +6,9 @@
 //   navy:  #0d1b2a  — sfondo card
 //   bordo: #1e3050  — bordo/separatore
 
+'use client'
+
+import { useState } from 'react'
 import { ExternalLink, FileText } from 'lucide-react'
 
 export interface ShowCardData {
@@ -53,8 +56,65 @@ function formatShowtime(datetime: string): { dateLabel: string; timeLabel: strin
 export default function ShowCard({ group }: { group: FilmGroup }) {
   const { film, shows } = group
   const durationStr = film.duration ? formatDuration(film.duration) : null
+  const [lightbox, setLightbox] = useState(false)
 
   return (
+    <>
+    {/* ── Lightbox ── */}
+    {lightbox && film.posterUrl && (
+      <div
+        onClick={() => setLightbox(false)}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 1000,
+          background: 'rgba(0,0,0,0.88)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          animation: 'fadeIn 0.18s ease',
+        }}
+      >
+        <style>{`@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }`}</style>
+        {/* Pulsante chiudi */}
+        <button
+          onClick={() => setLightbox(false)}
+          aria-label="Chiudi"
+          style={{
+            position: 'absolute',
+            top: '16px',
+            right: '16px',
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.15)',
+            border: 'none',
+            color: '#f5f5f5',
+            fontSize: '1.1rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          ✕
+        </button>
+        {/* Immagine */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={film.posterUrl}
+          alt={film.title}
+          onClick={e => e.stopPropagation()}
+          style={{
+            maxWidth: '90vw',
+            maxHeight: '90vh',
+            objectFit: 'contain',
+            borderRadius: '8px',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.7)',
+          }}
+        />
+      </div>
+    )}
     <div
       style={{
         background: '#0d1b2a',
@@ -120,6 +180,7 @@ export default function ShowCard({ group }: { group: FilmGroup }) {
       <div style={{ display: 'flex', gap: '12px', padding: '10px 12px 12px', alignItems: 'flex-start' }}>
         {/* Poster */}
         <div
+          onClick={() => film.posterUrl && setLightbox(true)}
           style={{
             width: '90px',
             minWidth: '90px',
@@ -131,6 +192,7 @@ export default function ShowCard({ group }: { group: FilmGroup }) {
             alignItems: 'center',
             justifyContent: 'center',
             flexShrink: 0,
+            cursor: film.posterUrl ? 'zoom-in' : 'default',
           }}
         >
           {film.posterUrl ? (
@@ -175,5 +237,6 @@ export default function ShowCard({ group }: { group: FilmGroup }) {
         </div>
       </div>
     </div>
+    </>
   )
 }
