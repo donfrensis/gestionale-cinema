@@ -113,7 +113,6 @@ export default function WithdrawalsDeposits() {
       const depositsRes = await fetch('/api/deposits');
       if (!depositsRes.ok) throw new Error('Errore nel caricamento dei versamenti');
       const depositsData = await depositsRes.json();
-      console.log("Deposits ricevuti:", depositsData); // DEBUG
       setDeposits(depositsData);
       
     } catch (error) {

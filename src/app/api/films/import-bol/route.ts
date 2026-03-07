@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth-options'
 import { prisma } from '@/lib/db'
-import { getBolFilmsList, getBolFilmDetails } from '@/lib/bol-service'
+import { getBolFilmsList, getBolFilmDetails, downloadAndSavePoster } from '@/lib/bol-service'
 
 export interface ImportBolResult {
   imported: number
@@ -52,6 +52,10 @@ export async function POST(): Promise<NextResponse> {
       try {
         const details = await getBolFilmDetails(bolId)
 
+        const localPosterUrl = details.posterUrl
+          ? await downloadAndSavePoster(details.bolId, details.posterUrl)
+          : null
+
         await prisma.film.create({
           data: {
             title: details.title || title,
@@ -61,7 +65,7 @@ export async function POST(): Promise<NextResponse> {
             nationality: details.nationality ?? null,
             producer: details.producer ?? null,
             distributor: details.distributor ?? null,
-            posterUrl: details.posterUrl ?? null,
+            posterUrl: localPosterUrl ?? null,
             myMoviesUrl: details.myMoviesUrl ?? null,
             importedFrom: 'BOL',
           },

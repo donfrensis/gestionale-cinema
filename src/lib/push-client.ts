@@ -91,13 +91,10 @@ export async function subscribeToPush() {
     }
     
     // Registra il service worker
-    console.log('Registrazione service worker...');
     let registration = await navigator.serviceWorker.register('/sw.js');
-    console.log('Service worker registrato');
     
     // Forza l'attivazione se possibile
     if (registration.waiting) {
-      console.log('Service worker in attesa, invio messaggio di attivazione...');
       registration.waiting.postMessage({type: 'SKIP_WAITING'});
       
       // Attendi un momento per permettere l'elaborazione del messaggio
@@ -111,24 +108,20 @@ export async function subscribeToPush() {
     }
     
     // Prova a ottenere il pushManager anche se il service worker non è completamente attivato
-    console.log('Tentativo di creazione subscription...');
     try {
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
       });
       
-      console.log('Subscription creata con successo');
-      
       // Invia la subscription al server
       await saveSubscriptionToServer(subscription);
-      
+
       return subscription;
     } catch (pushError) {
       console.error('Errore nella creazione della subscription:', pushError);
-      
+
       // Se fallisce, prova un approccio alternativo: forzare l'aggiornamento
-      console.log('Tentativo alternativo di registro del service worker...');
       await registration.update();
       
       // Attendi per dare tempo al browser di elaborare l'aggiornamento
@@ -147,8 +140,6 @@ export async function subscribeToPush() {
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
       });
-      
-      console.log('Subscription creata con successo (tentativo alternativo)');
       
       // Invia la subscription al server
       await saveSubscriptionToServer(subscription);

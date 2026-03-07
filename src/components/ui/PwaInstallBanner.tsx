@@ -42,14 +42,12 @@ export default function PwaInstallBanner() {
     await installPrompt.prompt();
     
     // Aspetta la scelta dell'utente
-    const choiceResult = await installPrompt.userChoice;
+    await installPrompt.userChoice;
     
     // Resetta lo stato
     setInstallPrompt(null);
     setIsVisible(false);
     
-    // Traccia il risultato
-    console.log(`User ${choiceResult.outcome} the installation`);
   };
   
   // Chiude il banner

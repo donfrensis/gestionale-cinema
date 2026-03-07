@@ -50,3 +50,7 @@ public/sw.js
 public/workbox-*.js
 public/swe-worker-*.js
 public/fallback-*.js
+
+# Locandine e schede di lettura
+public/posters/
+public/schede/

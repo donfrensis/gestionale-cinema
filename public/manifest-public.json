@@ -1,0 +1,24 @@
+{
+  "name": "Cinema Everest Galluzzo",
+  "short_name": "Cinema EG",
+  "description": "Programmazione del Cinema Everest di Galluzzo",
+  "start_url": "/programmazione",
+  "display": "standalone",
+  "background_color": "#060e1a",
+  "theme_color": "#0a1628",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

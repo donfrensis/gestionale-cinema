@@ -135,6 +135,14 @@ model PushSubscription {
   @@index([userId], map: "PushSubscription_userId_fkey")
 }
 
+model PublicPushSubscription {
+  id        Int      @id @default(autoincrement())
+  endpoint  String   @unique @db.VarChar(500)
+  p256dh    String   @db.VarChar(200)
+  auth      String   @db.VarChar(100)
+  createdAt DateTime @default(now())
+}
+
 model Notification {
   id        Int       @id @default(autoincrement())
   userId    Int

@@ -4,6 +4,12 @@ import withPWA from "@ducanh2912/next-pwa";
 // @ts-check
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'www.mymovies.it' },
+      { protocol: 'http', hostname: 'bol.gostec.it' },
+    ],
+  },
 };
 
 export default withPWA({

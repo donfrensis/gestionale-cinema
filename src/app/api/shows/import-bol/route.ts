@@ -73,7 +73,6 @@ export async function GET(): Promise<NextResponse> {
       const film = filmByBolId.get(s.filmBolId)
       if (!film) {
         unmatched.push(`${s.filmTitle} (BOL Opera ID: ${s.filmBolId})`)
-        console.warn(`Show BOL ${s.bolId} ignorato: film con bolId ${s.filmBolId} non trovato nel DB`)
         continue
       }
 

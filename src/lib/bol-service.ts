@@ -1,6 +1,8 @@
 // src/lib/bol-service.ts
 import { parse } from 'node-html-parser';
 import 'server-only';
+import fs from 'fs';
+import path from 'path';
 
 /**
  * Configurazione per l'integrazione BOL LiveTicket
@@ -56,8 +58,6 @@ async function loginBol(): Promise<string[]> {
     return sessionCookies;
   }
 
-  console.log('Effettuando il login su BOL LiveTicket...');
-  
   try {
     const response = await fetch(`${baseUrl}/autentica.asp`, {
       method: 'POST',
@@ -85,7 +85,6 @@ async function loginBol(): Promise<string[]> {
     sessionCookies = cookies;
     lastLoginTime = now;
     
-    console.log('Login su BOL riuscito');
     return cookies;
   } catch (error) {
     console.error('Errore durante il login su BOL:', error);
@@ -199,6 +198,43 @@ export async function getBolTicketData(showDate: string, showTime: string): Prom
       ticketCount: 0,
       subscriptionCount: 0
     };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// POSTER LOCALE
+// ---------------------------------------------------------------------------
+
+/**
+ * Scarica il poster da BOL e lo salva in /public/posters/[bolId].[ext].
+ * Restituisce il path locale "/posters/[bolId].[ext]" oppure null in caso di errore.
+ * Non riscaricare se il file locale esiste già.
+ * Non lancia eccezioni.
+ */
+export async function downloadAndSavePoster(
+  bolId: number,
+  remoteUrl: string
+): Promise<string | null> {
+  try {
+    const postersDir = path.join(process.cwd(), 'public', 'posters')
+    await fs.promises.mkdir(postersDir, { recursive: true })
+
+    const urlExt = remoteUrl.split('.').pop()?.split('?')[0]?.toLowerCase()
+    const ext = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(urlExt ?? '') ? urlExt : 'jpg'
+    const filename = `${bolId}.${ext}`
+    const localPath = path.join(postersDir, filename)
+    const publicPath = `/posters/${filename}`
+
+    if (fs.existsSync(localPath)) return publicPath
+
+    const res = await fetch(remoteUrl)
+    if (!res.ok) return null
+
+    const buffer = Buffer.from(await res.arrayBuffer())
+    await fs.promises.writeFile(localPath, buffer)
+    return publicPath
+  } catch {
+    return null
   }
 }
 
@@ -558,8 +594,6 @@ export async function getBolCartellone(
     const htmlAbbonamenti = await decode1252(respAbbonamenti);
     const rowsAbbonamenti = parseAbbonnamentiHtml(htmlAbbonamenti);
 
-    console.log('[BOL] biglietti:', rowsBiglietti.length, '| abbonamenti:', rowsAbbonamenti.length);
-
     // Unisce e ordina per datetime crescente
     const rows = [...rowsBiglietti, ...rowsAbbonamenti].sort(
       (a, b) => a.datetime.getTime() - b.datetime.getTime()
@@ -761,7 +795,7 @@ function parseIncassiHtml(html: string): BolTicketData {
               const totalAmount = parseFloat(parts[6].replace(',', '.')) || 0;
               // Se abbiamo già i totali parziali, questo dovrebbe essere la somma
               if (Math.abs((ticketTotal + subscriptionTotal) - totalAmount) > 0.01) {
-                console.warn('Il totale non corrisponde alla somma dei totali parziali');
+                // totale non quadra, ma continuiamo comunque
               }
             }
           }

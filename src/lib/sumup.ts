@@ -81,8 +81,6 @@ export class SumUpService {
       // Aggiungi i parametri all'URL
       url += `?${params.toString()}`;
       
-      console.log(`Chiamata API SumUp: ${url}`);
-      
       // Invia la richiesta
       const response = await fetch(url, {
         method: 'GET',
@@ -98,16 +96,6 @@ export class SumUpService {
       }
       
       const data = await response.json();
-      
-      // Per debug: stampa le prime transazioni ricevute
-      if (data.items && data.items.length > 0) {
-        console.log(`Ricevute ${data.items.length} transazioni dall'API:`);
-        data.items.slice(0, 3).forEach((tx: SumUpTransaction) => {
-          console.log(`- ${tx.timestamp}: ${tx.amount}€ (${tx.transaction_code})`);
-        });
-      } else {
-        console.log("Nessuna transazione ricevuta dall'API");
-      }
       
       return data.items || [];
       
@@ -142,35 +130,12 @@ export class SumUpService {
       const endTime = new Date(showDateTime);
       endTime.setMinutes(endTime.getMinutes() + 60); // 30 minuti dopo
       
-      // Log per debug in formato italiano
-      const formatIT = (date: Date) => {
-        return date.toLocaleString('it-IT', { 
-          day: '2-digit', 
-          month: '2-digit', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        });
-      };
-      
-      console.log(`Spettacolo ${showId} (${formatIT(showDateTime)})`);
-      console.log(`Finestra temporale: ${formatIT(startTime)} - ${formatIT(endTime)}`);
-      console.log(`Finestra temporale ISO: ${startTime.toISOString()} - ${endTime.toISOString()}`);
-      
       // Recupera le transazioni per questa finestra temporale specifica
       // Assicurati che le date siano in formato UTC/ISO per l'API
       const transactions = await this.getTransactions(startTime, endTime);
       
       // Calcola il totale
       const total = transactions.reduce((sum, tx) => sum + Number(tx.amount), 0);
-      
-      // Log delle transazioni trovate
-      console.log(`Trovate ${transactions.length} transazioni per un totale di ${total}€`);
-      transactions.forEach(tx => {
-        // Converti il timestamp UTC di SumUp in data locale per il log
-        const txDate = new Date(tx.timestamp);
-        console.log(`- ${formatIT(txDate)}: ${tx.amount}€ (${tx.transaction_code})`);
-      });
       
       return {
         transactions,

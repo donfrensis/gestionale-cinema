@@ -20,8 +20,12 @@ function isMobileDevice(userAgent: string): boolean {
 }
 
 export async function middleware(request: NextRequest) {
-  console.log('Middleware eseguito!', request.nextUrl.pathname);
-  
+  // Redirect radice per dominio cinema pubblico
+  const host = request.headers.get('host') || ''
+  if (host.startsWith('cinema.everestgalluzzo.it') && request.nextUrl.pathname === '/') {
+    return NextResponse.redirect(new URL('/programmazione', request.url))
+  }
+
   // Ottieni il token dalla sessione
   const token = await getToken({ 
     req: request, 
@@ -35,7 +39,15 @@ export async function middleware(request: NextRequest) {
 
   // Ottieni il path dalla URL
   const path = request.nextUrl.pathname;
-  
+
+  // Path pubblici — bypass autenticazione
+  if (
+    path.startsWith('/programmazione') ||
+    path.startsWith('/api/public/')
+  ) {
+    return NextResponse.next();
+  }
+
   // Ignora API e assets statici
   if (
     path.startsWith('/api/') || 
@@ -65,7 +77,6 @@ export async function middleware(request: NextRequest) {
   
   // Se non è admin ma sta tentando di accedere a una pagina admin-only
   if (!isAdmin && isAdminOnlyPath) {
-    console.log('Non-admin trying to access admin page, redirecting to /availability');
     return NextResponse.redirect(new URL('/availability', request.url));
   }
   
@@ -77,7 +88,6 @@ export async function middleware(request: NextRequest) {
   if (!isAdmin && isMobile) {
     // Su mobile, gli utenti non-admin possono accedere solo alla pagina availability
     if (path !== '/availability') {
-      console.log('Non-admin on mobile, redirecting to /availability');
       return NextResponse.redirect(new URL('/availability', request.url));
     }
   }

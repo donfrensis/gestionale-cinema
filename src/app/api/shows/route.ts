@@ -5,7 +5,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from '@/lib/auth-options';
 import { prisma } from "@/lib/db"
 import { z } from "zod"
-import { notifyNewEvents } from "@/lib/server-notifications" 
+import { notifyNewEvents, notifyPublicSubscribers } from "@/lib/server-notifications"
 
 const showSchema = z.object({
   datetime: z.string(),
@@ -122,6 +122,9 @@ export async function POST(request: NextRequest) {
       // Invia notifica solo se l'admin ha scelto di farlo
       if (sendNotification && createdShows.length > 0) {
         await notifyNewEvents(prisma, createdShows.length);
+        await notifyPublicSubscribers(prisma).catch(err =>
+          console.error('Errore notifica pubblico:', err)
+        );
       }
       
       // Formatta la risposta
@@ -193,6 +196,9 @@ export async function POST(request: NextRequest) {
       // Invia notifica solo se specificato (default: true)
       if (sendNotification) {
         await notifyNewEvents(prisma, 1);
+        await notifyPublicSubscribers(prisma).catch(err =>
+          console.error('Errore notifica pubblico:', err)
+        );
       }
       
       return NextResponse.json({

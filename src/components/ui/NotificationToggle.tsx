@@ -20,15 +20,11 @@ export default function NotificationToggle() {
   // Verifica se le notifiche sono supportate e se l'utente è già iscritto
   useEffect(() => {
     const checkNotificationStatus = async () => {
-      console.log('NotificationToggle - Controllo supporto notifiche');
       const supported = isPushNotificationSupported();
-      console.log('NotificationToggle - Supporto notifiche:', supported);
       setIsSupported(supported);
       
       if (supported) {
         try {
-          console.log('NotificationToggle - Controllo subscription esistente');
-          
           // Aggiungi un timeout per evitare che si blocchi indefinitamente
           const subscriptionPromise = getSubscription();
           const timeoutPromise = new Promise((_, reject) => 
@@ -36,12 +32,7 @@ export default function NotificationToggle() {
           );
           
           const subscription = await Promise.race([subscriptionPromise, timeoutPromise])
-            .catch(error => {
-              console.warn('NotificationToggle - Timeout o errore nel recupero subscription:', error);
-              return null;
-            });
-            
-          console.log('NotificationToggle - Subscription esistente:', !!subscription);
+            .catch(() => null);
           setIsSubscribed(!!subscription);
         } catch (error) {
           console.error('NotificationToggle - Errore controllo subscription:', error);
@@ -63,7 +54,6 @@ export default function NotificationToggle() {
       setIsLoading(true);
       
       if (isSubscribed) {
-        console.log('NotificationToggle - Tentativo di annullare sottoscrizione');
         await unsubscribeFromPush();
         setIsSubscribed(false);
         toast({
@@ -71,7 +61,6 @@ export default function NotificationToggle() {
           description: "Non riceverai più notifiche push da questo dispositivo."
         });
       } else {
-        console.log('NotificationToggle - Tentativo di sottoscrizione');
         await subscribeToPush();
         setIsSubscribed(true);
         toast({

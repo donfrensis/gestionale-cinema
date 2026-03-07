@@ -11,11 +11,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Non autorizzato' }, { status: 401 });
     }
 
-    console.log('Session:', JSON.stringify(session, null, 2));
-    console.log('User ID:', session.user.id, 'Type:', typeof session.user.id);
-
     const data = await request.json();
-    console.log('Received data:', JSON.stringify(data, null, 2));
     
     // Verifica se c'è già un report aperto
     const openReport = await prisma.cashReport.findFirst({
@@ -64,33 +60,24 @@ export async function POST(request: Request) {
       // Calcola il totale dell'ultima chiusura
       const lastClosingTotal = calculateTotalFromCashJson(lastClosedReport.closingCash);
 
-      // Trova i prelievi fatti dopo la DATA DELLO SHOW, non dopo la chiusura del report
+      // Trova i prelievi fatti dopo la CHIUSURA del report precedente
       const withdrawals = await prisma.withdrawal.findMany({
         where: {
           createdAt: {
-            gte: lastShowWithClosedReport.datetime // Usa datetime dello show
+            gte: lastClosedReport.closingDateTime! // Usa la data di chiusura effettiva
           }
         }
       });
 
-      // Log per debug
-      console.log("Last show datetime:", lastShowWithClosedReport.datetime);
-      console.log("Closing total:", Number(lastClosingTotal));
-      console.log("Withdrawals:", withdrawals);
-
       // Calcola il totale atteso (chiusura - prelievi)
-      const totalWithdrawals = withdrawals.reduce((sum, w) => 
+      const totalWithdrawals = withdrawals.reduce((sum, w) =>
         sum + Number(w.amount), 0
       );
-      console.log("Total withdrawals:", totalWithdrawals);
-  
+
       const expectedTotal = Number(lastClosingTotal) - totalWithdrawals;
-      console.log("Expected total:", expectedTotal);
-  
+
       // Calcola il totale attuale
       const currentTotal = calculateTotalFromCashJson(data.cashData);
-      console.log("Current total:", Number(currentTotal));
-      console.log("Difference:", Math.abs(expectedTotal - Number(currentTotal)));
 
       // Verifica la quadratura con una tolleranza di 0.01
       if (Math.abs(expectedTotal - Number(currentTotal)) > 0.01) {

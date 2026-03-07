@@ -1,7 +1,7 @@
 // src/components/Films/FilmForm.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Film } from '@prisma/client'
 import { Button } from '@/components/ui/button'
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
-import { X, Save, Search, Check, Loader2 } from 'lucide-react'
+import { X, Save, Search, Check, Loader2, Upload, Trash2 } from 'lucide-react'
 import type { MyMoviesSearchResult } from '@/lib/mymovies-scraper'
 
 interface FilmFormProps {
@@ -87,6 +87,55 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
   // ─── MyMovies UI state ───────────────────────────────────────────────────
   const [mmState, setMmState] = useState<MyMoviesUiState>({ phase: 'idle' })
   const [mmSaving, setMmSaving] = useState(false)
+
+  // ─── Scheda PDF state ────────────────────────────────────────────────────
+  const [schedaPresente, setSchedaPresente] = useState<boolean | null>(null)
+  const [schedaLoading, setSchedaLoading] = useState(false)
+  const schedaInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!film?.id || !film.bolId) return
+    fetch(`/schede/${film.bolId}.pdf`, { method: 'HEAD' })
+      .then(r => setSchedaPresente(r.ok))
+      .catch(() => setSchedaPresente(false))
+  }, [film?.id, film?.bolId])
+
+  const handleSchedaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !film?.id) return
+    setSchedaLoading(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch(`/api/films/${film.id}/scheda`, { method: 'POST', body: fd })
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Errore upload')
+      }
+      setSchedaPresente(true)
+      toast({ title: 'Scheda caricata', description: 'La scheda PDF è stata caricata con successo.' })
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Errore', description: err instanceof Error ? err.message : 'Errore durante l\'upload' })
+    } finally {
+      setSchedaLoading(false)
+      if (schedaInputRef.current) schedaInputRef.current.value = ''
+    }
+  }
+
+  const handleSchedaDelete = async () => {
+    if (!film?.id) return
+    setSchedaLoading(true)
+    try {
+      const res = await fetch(`/api/films/${film.id}/scheda`, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Errore eliminazione')
+      setSchedaPresente(false)
+      toast({ title: 'Scheda rimossa', description: 'La scheda PDF è stata eliminata.' })
+    } catch (err) {
+      toast({ variant: 'destructive', title: 'Errore', description: err instanceof Error ? err.message : 'Errore durante l\'eliminazione' })
+    } finally {
+      setSchedaLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -312,6 +361,51 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
             onChange={(e) => setFormData(prev => ({ ...prev, posterUrl: e.target.value }))}
             placeholder="https://..."
           />
+        </div>
+
+        {/* ── Scheda di lettura PDF ─────────────────────────────────────── */}
+        <div className="border rounded-lg p-4 space-y-2 bg-muted/30">
+          <h3 className="font-semibold text-sm">Scheda di lettura PDF</h3>
+          {film?.bolId ? (
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm text-muted-foreground">
+                {schedaPresente === null ? '…' : schedaPresente ? '✅ Scheda presente' : '⚪ Nessuna scheda caricata'}
+              </span>
+              <input
+                ref={schedaInputRef}
+                type="file"
+                accept=".pdf"
+                className="hidden"
+                onChange={handleSchedaUpload}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={schedaLoading}
+                onClick={() => schedaInputRef.current?.click()}
+              >
+                {schedaLoading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Upload className="h-3 w-3 mr-1" />}
+                Carica PDF
+              </Button>
+              {schedaPresente && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={schedaLoading}
+                  onClick={handleSchedaDelete}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Rimuovi
+                </Button>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Associa un bolId al film per caricare la scheda.
+            </p>
+          )}
         </div>
 
         {/* ── Sezione MyMovies ─────────────────────────────────────────── */}

@@ -169,7 +169,6 @@ export async function DELETE(request: NextRequest, context: RouteParams) {
       }
     } catch {
       // Se il body è vuoto o non è un JSON valido, usa il default (true)
-      console.log("No valid request body in DELETE, using default notification setting");
     }
 
     const show = await prisma.show.findUnique({

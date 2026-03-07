@@ -216,6 +216,40 @@ export async function notifyEventTaken(db: PrismaClient, operatorId: number, sho
   }
 }
 
+// Funzione per inviare notifica push ai visitatori pubblici (PublicPushSubscription)
+export async function notifyPublicSubscribers(db: PrismaClient): Promise<void> {
+  if (!setupWebPush()) return;
+
+  const subscriptions = await db.publicPushSubscription.findMany();
+  if (subscriptions.length === 0) return;
+
+  const payload = JSON.stringify({
+    title: 'Cinema Everest Galluzzo',
+    body: 'Nuova programmazione disponibile!',
+    url: '/programmazione',
+  });
+
+  for (const sub of subscriptions) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        payload
+      );
+    } catch (error: unknown) {
+      // Subscription scaduta o non più valida — elimina dal DB
+      if (
+        error &&
+        typeof error === 'object' &&
+        'statusCode' in error &&
+        ((error as { statusCode: number }).statusCode === 404 ||
+          (error as { statusCode: number }).statusCode === 410)
+      ) {
+        await db.publicPushSubscription.delete({ where: { endpoint: sub.endpoint } });
+      }
+    }
+  }
+}
+
 // Funzione per inviare notifica quando un operatore rinuncia
 export async function notifyEventWithdrawn(db: PrismaClient, operatorId: number, showId: number, reason: string) {
   try {

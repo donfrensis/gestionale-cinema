@@ -24,6 +24,11 @@
 
 import { PrismaClient } from '@prisma/client'
 import { parse as parseHtml } from 'node-html-parser'
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 // ─── Flags ────────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2)
@@ -141,6 +146,31 @@ async function getBolFilmDetails(bolId) {
   }
 }
 
+// ─── Download poster locale ───────────────────────────────────────────────────
+async function downloadAndSavePoster(bolId, remoteUrl) {
+  try {
+    const postersDir = path.join(__dirname, '..', 'public', 'posters')
+    await fs.promises.mkdir(postersDir, { recursive: true })
+
+    const urlExt = remoteUrl.split('.').pop()?.split('?')[0]?.toLowerCase()
+    const ext = ['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(urlExt ?? '') ? urlExt : 'jpg'
+    const filename = `${bolId}.${ext}`
+    const localPath = path.join(postersDir, filename)
+    const publicPath = `/posters/${filename}`
+
+    if (fs.existsSync(localPath)) return publicPath
+
+    const res = await fetch(remoteUrl)
+    if (!res.ok) return null
+
+    const buffer = Buffer.from(await res.arrayBuffer())
+    await fs.promises.writeFile(localPath, buffer)
+    return publicPath
+  } catch {
+    return null
+  }
+}
+
 // ─── Pausa tra richieste ──────────────────────────────────────────────────────
 const sleep = (ms) => new Promise(r => setTimeout(r, ms))
 
@@ -160,7 +190,7 @@ async function main() {
     // 2. Film nel DB con bolId
     const dbFilms = await prisma.film.findMany({
       where: { bolId: { not: null } },
-      select: { id: true, bolId: true, title: true },
+      select: { id: true, bolId: true, title: true, posterUrl: true },
     })
     const dbByBolId = new Map(dbFilms.map(f => [f.bolId, f]))
     console.log(`   → ${dbFilms.length} film nel DB con bolId`)
@@ -208,6 +238,14 @@ async function main() {
         if (!SKIP_DETAILS) {
           await sleep(300) // evita flood BOL
           const details = await getBolFilmDetails(bolId)
+
+          // Scarica poster locale se disponibile
+          let posterUrl = details.posterUrl ?? undefined
+          if (details.posterUrl) {
+            const localPath = await downloadAndSavePoster(bolId, details.posterUrl)
+            posterUrl = localPath ?? undefined
+          }
+
           data = {
             ...data,
             ...(details.title     && { title: details.title }),
@@ -216,7 +254,7 @@ async function main() {
             nationality: details.nationality ?? undefined,
             producer:    details.producer    ?? undefined,
             distributor: details.distributor ?? undefined,
-            posterUrl:   details.posterUrl   ?? undefined,
+            posterUrl,
             myMoviesUrl: details.myMoviesUrl ?? undefined,
           }
         }
@@ -232,6 +270,10 @@ async function main() {
             // e NON toccare myMoviesUrl (BOL non lo conosce, viene da MyMovies)
             // eslint-disable-next-line @typescript-eslint/no-unused-vars
             const { title: _title, myMoviesUrl: _mmUrl, ...updateData } = cleanData
+            // Aggiorna posterUrl solo se il valore attuale è ancora un URL BOL remoto
+            if (updateData.posterUrl !== undefined && existingFilm.posterUrl && !existingFilm.posterUrl.startsWith('http')) {
+              delete updateData.posterUrl
+            }
             await prisma.film.update({ where: { id: existingFilm.id }, data: updateData })
             updated++
           } else {
