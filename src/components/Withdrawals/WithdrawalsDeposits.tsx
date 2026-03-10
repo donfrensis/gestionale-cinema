@@ -36,6 +36,7 @@ import {
   SearchIcon 
 } from 'lucide-react';
 import WithdrawalsSummary from './WithdrawalsSummary';
+import { BanknoteCounter } from './BanknoteCounter';
 import { formatNumber } from '@/lib/utils';
 
 // Tipi
@@ -77,13 +78,15 @@ export default function WithdrawalsDeposits() {
   const [withdrawalAmount, setWithdrawalAmount] = useState('');
   const [withdrawalNotes, setWithdrawalNotes] = useState('');
   const [submittingWithdrawal, setSubmittingWithdrawal] = useState(false);
-  
+  const [withdrawalFormKey, setWithdrawalFormKey] = useState(0);
+
   // Form versamento
   const [depositAmount, setDepositAmount] = useState('');
   const [depositDate, setDepositDate] = useState(new Date().toISOString().split('T')[0]);
   const [depositReference, setDepositReference] = useState('');
   const [depositNotes, setDepositNotes] = useState('');
   const [submittingDeposit, setSubmittingDeposit] = useState(false);
+  const [depositFormKey, setDepositFormKey] = useState(0);
   
   // Filtri di ricerca
   const [withdrawalSearch, setWithdrawalSearch] = useState('');
@@ -167,6 +170,7 @@ export default function WithdrawalsDeposits() {
       // Reset form e ricaricamento dati
       setWithdrawalAmount('');
       setWithdrawalNotes('');
+      setWithdrawalFormKey(k => k + 1);
       loadData();
       
     } catch (error) {
@@ -268,6 +272,7 @@ export default function WithdrawalsDeposits() {
       setDepositReference('');
       setDepositNotes('');
       setSelectedWithdrawals([]);
+      setDepositFormKey(k => k + 1);
       loadData();
       
     } catch (error) {
@@ -341,17 +346,10 @@ export default function WithdrawalsDeposits() {
                 </DialogHeader>
                 <form onSubmit={handleWithdrawalSubmit} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="amount">Importo (€)</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={withdrawalAmount}
-                      onChange={(e) => setWithdrawalAmount(e.target.value)}
-                      placeholder="0.00"
-                      required
-                      className="text-right"
+                    <Label>Conteggio banconote</Label>
+                    <BanknoteCounter
+                      key={withdrawalFormKey}
+                      onTotalChange={(total) => setWithdrawalAmount(total > 0 ? total.toString() : '')}
                     />
                   </div>
                   <div className="space-y-2">
@@ -516,17 +514,17 @@ export default function WithdrawalsDeposits() {
                     <div>
                       <form onSubmit={handleDepositSubmit} className="space-y-4">
                         <div className="space-y-2">
-                          <Label htmlFor="depositAmount">Importo Versamento (€)</Label>
-                          <Input
-                            id="depositAmount"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            value={depositAmount}
-                            onChange={(e) => setDepositAmount(e.target.value)}
-                            placeholder="0.00"
-                            required
-                            className="text-right"
+                          <div className="flex items-center justify-between">
+                            <Label>Conteggio banconote</Label>
+                            {calculateSelectedTotal() > 0 && (
+                              <span className="text-xs text-muted-foreground">
+                                Atteso: € {formatNumber(calculateSelectedTotal())}
+                              </span>
+                            )}
+                          </div>
+                          <BanknoteCounter
+                            key={depositFormKey}
+                            onTotalChange={(total) => setDepositAmount(total > 0 ? total.toString() : '')}
                           />
                         </div>
                         <div className="space-y-2">

@@ -1,5 +1,13 @@
 // src/app/programmazione/layout.tsx
 import type { Metadata } from 'next'
+import { Roboto_Mono } from 'next/font/google'
+
+const robotoMono = Roboto_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-roboto-mono',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Programmazione Cinema Everest Galluzzo',
@@ -32,7 +40,9 @@ export default function ProgrammazioneLayout({ children }: { children: React.Rea
         )}
       </head>
       <body style={{ margin: 0, background: '#060e1a', color: '#f5f5f5' }}>
-        {children}
+        <div className={robotoMono.variable}>
+          {children}
+        </div>
       </body>
     </html>
   )

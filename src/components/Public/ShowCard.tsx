@@ -53,6 +53,16 @@ function formatShowtime(datetime: string): { dateLabel: string; timeLabel: strin
   return { dateLabel, timeLabel: `${hh}:${mm}` }
 }
 
+const handleSchedaClick = async (bolId: string) => {
+  const url = `/schede/${bolId}.pdf`
+  const res = await fetch(url, { method: 'HEAD' })
+  if (res.ok) {
+    window.open(url, '_blank')
+  } else {
+    alert('Ci scusiamo, la scheda di lettura per questo film non è ancora stata caricata.')
+  }
+}
+
 export default function ShowCard({ group }: { group: FilmGroup }) {
   const { film, shows } = group
   const durationStr = film.duration ? formatDuration(film.duration) : null
@@ -160,15 +170,13 @@ export default function ShowCard({ group }: { group: FilmGroup }) {
             {durationStr ? `⏱ ${durationStr}` : ''}
           </span>
           {film.bolId && (
-            <a
-              href={`/schede/${film.bolId}.pdf`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: '#9ca3af', display: 'flex', alignItems: 'center' }}
-              aria-label="Scheda PDF"
+            <span
+              onClick={() => handleSchedaClick(String(film.bolId))}
+              style={{ cursor: 'pointer' }}
+              title="Scheda di lettura"
             >
-              <FileText size={15} />
-            </a>
+              <FileText size={18} color="#9ca3af" />
+            </span>
           )}
         </div>
       </div>
@@ -214,8 +222,9 @@ export default function ShowCard({ group }: { group: FilmGroup }) {
             display: 'flex',
             flexDirection: 'column',
             gap: '4px',
-            fontFamily: "'Courier New', Courier, monospace",
+            fontFamily: "var(--font-roboto-mono), 'Courier New', monospace",
             fontSize: '0.85rem',
+            fontWeight: 500,
           }}
         >
           {shows.map(show => {
