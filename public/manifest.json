@@ -1,6 +1,6 @@
 {
   "name": "Gestionale Cinema - Volontari",
-  "short_name": "Cinema",
+  "short_name": "Volontari Cinema",
   "description": "Gestione disponibilità volontari cinema",
   "start_url": "/availability",
   "display": "standalone",

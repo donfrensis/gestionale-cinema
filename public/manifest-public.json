@@ -1,7 +1,7 @@
 {
   "name": "Cinema Everest Galluzzo",
-  "short_name": "Cinema EG",
-  "description": "Programmazione del Cinema Everest di Galluzzo",
+  "short_name": "Prorammazione Cinema EG",
+  "description": "Programmazione del Cinema Everest del Galluzzo",
   "start_url": "/programmazione",
   "display": "standalone",
   "background_color": "#060e1a",

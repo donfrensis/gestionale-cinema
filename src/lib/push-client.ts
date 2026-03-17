@@ -71,6 +71,14 @@ export async function getSubscription() {
   }
 }
 
+/** Ri-sincronizza la subscription del browser col DB (idempotente, silenziosa) */
+export async function syncSubscription(): Promise<boolean> {
+  const sub = await getSubscription()
+  if (!sub) return false
+  await saveSubscriptionToServer(sub)
+  return true
+}
+
 // Funzione per sottoscrivere alle notifiche push
 export async function subscribeToPush() {
   if (!isPushNotificationSupported()) {
@@ -81,6 +89,9 @@ export async function subscribeToPush() {
     // Verifica se c'è già una subscription attiva
     const existingSubscription = await getSubscription();
     if (existingSubscription) {
+      // La subscription esiste nel browser ma potrebbe non essere nel DB
+      // (es. record cancellato manualmente). La ri-salviamo sempre.
+      await saveSubscriptionToServer(existingSubscription);
       return existingSubscription;
     }
     
@@ -89,63 +100,25 @@ export async function subscribeToPush() {
     if (!permissionGranted) {
       throw new Error('Permesso per le notifiche non concesso');
     }
-    
-    // Registra il service worker
-    let registration = await navigator.serviceWorker.register('/sw.js');
-    
-    // Forza l'attivazione se possibile
-    if (registration.waiting) {
-      registration.waiting.postMessage({type: 'SKIP_WAITING'});
-      
-      // Attendi un momento per permettere l'elaborazione del messaggio
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-    
+
     // Recupera la chiave pubblica VAPID
     const publicVapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     if (!publicVapidKey) {
       throw new Error('Chiave VAPID pubblica non disponibile');
     }
-    
-    // Prova a ottenere il pushManager anche se il service worker non è completamente attivato
-    try {
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
-      });
-      
-      // Invia la subscription al server
-      await saveSubscriptionToServer(subscription);
 
-      return subscription;
-    } catch (pushError) {
-      console.error('Errore nella creazione della subscription:', pushError);
+    // Usiamo sw-cinema.js: SW leggero senza precache, si attiva in millisecondi.
+    // navigator.serviceWorker.ready è sicuro qui perché non blocca su precache pesante.
+    const registration = await navigator.serviceWorker.register('/sw-cinema.js');
+    await navigator.serviceWorker.ready;
 
-      // Se fallisce, prova un approccio alternativo: forzare l'aggiornamento
-      await registration.update();
-      
-      // Attendi per dare tempo al browser di elaborare l'aggiornamento
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Riprova ad ottenere tutte le registrazioni
-      const registrations = await navigator.serviceWorker.getRegistrations();
-      if (registrations.length === 0) {
-        throw new Error('Nessun service worker registrato dopo il tentativo alternativo');
-      }
-      
-      registration = registrations[0];
-      
-      // Tenta di nuovo la subscription
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
-      });
-      
-      // Invia la subscription al server
-      await saveSubscriptionToServer(subscription);
-      
-      return subscription;
-    }
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicVapidKey)
+    });
+
+    await saveSubscriptionToServer(subscription);
+    return subscription;
   } catch (error) {
     console.error('Errore nella sottoscrizione alle notifiche push:', error);
     throw error;

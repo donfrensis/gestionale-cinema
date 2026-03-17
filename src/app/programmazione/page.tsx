@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db'
 import ProgrammazioneHeader from '@/components/Public/ProgrammazioneHeader'
 import ShowList from '@/components/Public/ShowList'
 
-export const revalidate = 300
+export const dynamic = 'force-dynamic'
 
 export default async function ProgrammazionePage() {
   const shows = await prisma.show.findMany({

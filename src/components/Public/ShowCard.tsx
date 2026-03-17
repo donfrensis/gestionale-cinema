@@ -55,7 +55,7 @@ function formatShowtime(datetime: string): { dateLabel: string; timeLabel: strin
 
 const handleSchedaClick = async (bolId: string) => {
   const url = `/schede/${bolId}.pdf`
-  const res = await fetch(url, { method: 'HEAD' })
+  const res = await fetch(url, { method: 'HEAD', cache: 'no-store' })
   if (res.ok) {
     window.open(url, '_blank')
   } else {

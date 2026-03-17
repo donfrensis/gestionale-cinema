@@ -30,7 +30,8 @@ export default withPWA({
     // Escludi file problematici
     exclude: [
       /chunks\/app\/dashboard\/@modal/,
-      /app-build-manifest\.json$/
+      /app-build-manifest\.json$/,
+      /programmazione/,
     ]
   }
 })(nextConfig);

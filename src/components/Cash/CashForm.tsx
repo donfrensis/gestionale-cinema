@@ -456,7 +456,7 @@ export function CashForm({
                   </div>
                 ) : (
                   <>
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto max-h-64 overflow-y-auto">
                       <table className="w-full border-collapse">
                         <thead>
                           <tr className="border-b">

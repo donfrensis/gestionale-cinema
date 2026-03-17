@@ -2,7 +2,7 @@
 // Pulsante notifiche icon-only per la navbar availability
 import { useState, useEffect } from 'react'
 import { Bell, BellOff, Loader2 } from 'lucide-react'
-import { isPushNotificationSupported, getSubscription, subscribeToPush, unsubscribeFromPush } from '@/lib/push-client'
+import { isPushNotificationSupported, getSubscription, subscribeToPush, unsubscribeFromPush, syncSubscription } from '@/lib/push-client'
 import { toast } from '@/components/ui/use-toast'
 
 export default function NotificationIconButton() {
@@ -14,7 +14,10 @@ export default function NotificationIconButton() {
     const sub = getSubscription()
     const timeout = new Promise<null>((_, r) => setTimeout(() => r(null), 3000))
     Promise.race([sub, timeout])
-      .then(s => setIsSubscribed(!!s))
+      .then(s => {
+        setIsSubscribed(!!s)
+        if (s) syncSubscription().catch(() => {})
+      })
       .catch(() => {})
       .finally(() => setIsLoading(false))
   }, [])

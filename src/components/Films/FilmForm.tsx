@@ -9,12 +9,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
-import { X, Save, Search, Check, Loader2, Upload, Trash2 } from 'lucide-react'
+import { Search, Check, Loader2, Upload, Trash2 } from 'lucide-react'
 import type { MyMoviesSearchResult } from '@/lib/mymovies-scraper'
 
 interface FilmFormProps {
   film?: Film
   onClose: () => void
+  onLoadingChange?: (loading: boolean) => void
 }
 
 interface FormData {
@@ -61,10 +62,9 @@ function formatDateDisplay(iso: string): string {
   return `${d}/${m}/${y}`
 }
 
-export default function FilmForm({ film, onClose }: FilmFormProps) {
+export default function FilmForm({ film, onClose, onLoadingChange }: FilmFormProps) {
   const router = useRouter()
   const { toast } = useToast()
-  const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     title: film?.title || '',
     duration: film?.duration || null,
@@ -88,6 +88,23 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
   const [mmState, setMmState] = useState<MyMoviesUiState>({ phase: 'idle' })
   const [mmSaving, setMmSaving] = useState(false)
 
+  // ─── Auto-ricerca MyMovies all'apertura ──────────────────────────────────
+  useEffect(() => {
+    // Lancia la ricerca automaticamente se:
+    // - c'è un titolo
+    // - i dati MyMovies non sono ancora presenti
+    const hasMmData = !!(
+      formData.myMoviesUrl ||
+      formData.director ||
+      formData.genre ||
+      formData.italianReleaseDate
+    )
+    if (formData.title.trim() && !hasMmData) {
+      handleMyMoviesSearch()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // solo al mount
+
   // ─── Scheda PDF state ────────────────────────────────────────────────────
   const [schedaPresente, setSchedaPresente] = useState<boolean | null>(null)
   const [schedaLoading, setSchedaLoading] = useState(false)
@@ -95,7 +112,7 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
 
   useEffect(() => {
     if (!film?.id || !film.bolId) return
-    fetch(`/schede/${film.bolId}.pdf`, { method: 'HEAD' })
+    fetch(`/schede/${film.bolId}.pdf`, { method: 'HEAD', cache: 'no-store' })
       .then(r => setSchedaPresente(r.ok))
       .catch(() => setSchedaPresente(false))
   }, [film?.id, film?.bolId])
@@ -139,7 +156,7 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
+    onLoadingChange?.(true)
 
     try {
       const url = film ? `/api/films/${film.id}` : '/api/films'
@@ -177,7 +194,7 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
         description: error instanceof Error ? error.message : 'Errore durante il salvataggio',
       })
     } finally {
-      setLoading(false)
+      onLoadingChange?.(false)
     }
   }
 
@@ -249,20 +266,42 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        {/* ── Campi base ───────────────────────────────────────────────── */}
+    <form id="film-form" onSubmit={handleSubmit} className="space-y-4">
+
+      {/* Titolo */}
+      <div>
+        <Label htmlFor="title">Titolo</Label>
+        <Input
+          id="title"
+          value={formData.title}
+          onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
+          required
+          placeholder="Titolo del film"
+        />
+      </div>
+
+      {/* Regista */}
+      <div>
+        <Label htmlFor="director">Regista</Label>
+        <Input
+          id="director"
+          value={formData.director}
+          onChange={(e) => setFormData(prev => ({ ...prev, director: e.target.value }))}
+          placeholder="Nome del regista"
+        />
+      </div>
+
+      {/* Genere / Durata */}
+      <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="title">Titolo</Label>
+          <Label htmlFor="genre">Genere</Label>
           <Input
-            id="title"
-            value={formData.title}
-            onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-            required
-            placeholder="Titolo del film"
+            id="genre"
+            value={formData.genre}
+            onChange={(e) => setFormData(prev => ({ ...prev, genre: e.target.value }))}
+            placeholder="Es. Biografico, Drammatico"
           />
         </div>
-
         <div>
           <Label htmlFor="duration">Durata (minuti)</Label>
           <Input
@@ -276,7 +315,73 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
             placeholder="Durata in minuti"
           />
         </div>
+      </div>
 
+      {/* Descrizione */}
+      <div>
+        <Label htmlFor="description">Descrizione</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+          placeholder="Descrizione del film"
+          rows={3}
+        />
+      </div>
+
+      {/* Nazionalità / Data uscita italiana */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="nationality">Nazionalità</Label>
+          <Input
+            id="nationality"
+            value={formData.nationality}
+            onChange={(e) => setFormData(prev => ({ ...prev, nationality: e.target.value }))}
+            placeholder="Es. Italia, USA"
+          />
+        </div>
+        <div>
+          <Label htmlFor="italianReleaseDate">
+            Uscita italiana{' '}
+            {formData.italianReleaseDate && (
+              <span className="text-muted-foreground font-normal">
+                ({formatDateDisplay(formData.italianReleaseDate)})
+              </span>
+            )}
+          </Label>
+          <Input
+            id="italianReleaseDate"
+            type="date"
+            value={formData.italianReleaseDate}
+            onChange={(e) => setFormData(prev => ({ ...prev, italianReleaseDate: e.target.value }))}
+          />
+        </div>
+      </div>
+
+      {/* Produttore */}
+      <div>
+        <Label htmlFor="producer">Produttore</Label>
+        <Input
+          id="producer"
+          value={formData.producer}
+          onChange={(e) => setFormData(prev => ({ ...prev, producer: e.target.value }))}
+          placeholder="Casa di produzione"
+        />
+      </div>
+
+      {/* Distributore */}
+      <div>
+        <Label htmlFor="distributor">Distributore</Label>
+        <Input
+          id="distributor"
+          value={formData.distributor}
+          onChange={(e) => setFormData(prev => ({ ...prev, distributor: e.target.value }))}
+          placeholder="Casa di distribuzione"
+        />
+      </div>
+
+      {/* ID BOL / ID Cinetel */}
+      <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="bolId">ID BOL</Label>
           <Input
@@ -290,7 +395,6 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
             placeholder="ID BOL LiveTicket"
           />
         </div>
-
         <div>
           <Label htmlFor="cinetelId">ID Cinetel</Label>
           <Input
@@ -300,261 +404,165 @@ export default function FilmForm({ film, onClose }: FilmFormProps) {
             placeholder="ID Cinetel"
           />
         </div>
+      </div>
 
-        <div>
-          <Label htmlFor="description">Descrizione</Label>
-          <Textarea
-            id="description"
-            value={formData.description}
-            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-            placeholder="Descrizione del film"
-            rows={3}
-          />
-        </div>
+      {/* URL Locandina */}
+      <div>
+        <Label htmlFor="posterUrl">URL Locandina</Label>
+        <Input
+          id="posterUrl"
+          value={formData.posterUrl}
+          onChange={(e) => setFormData(prev => ({ ...prev, posterUrl: e.target.value }))}
+          placeholder="https://..."
+        />
+      </div>
 
-        <div>
-          <Label htmlFor="notes">Note</Label>
-          <Textarea
-            id="notes"
-            value={formData.notes}
-            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-            placeholder="Note aggiuntive"
-            rows={2}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="nationality">Nazionalità</Label>
-          <Input
-            id="nationality"
-            value={formData.nationality}
-            onChange={(e) => setFormData(prev => ({ ...prev, nationality: e.target.value }))}
-            placeholder="Es. Italia, USA"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="producer">Produttore</Label>
-          <Input
-            id="producer"
-            value={formData.producer}
-            onChange={(e) => setFormData(prev => ({ ...prev, producer: e.target.value }))}
-            placeholder="Casa di produzione"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="distributor">Distributore</Label>
-          <Input
-            id="distributor"
-            value={formData.distributor}
-            onChange={(e) => setFormData(prev => ({ ...prev, distributor: e.target.value }))}
-            placeholder="Casa di distribuzione"
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="posterUrl">URL Locandina</Label>
-          <Input
-            id="posterUrl"
-            value={formData.posterUrl}
-            onChange={(e) => setFormData(prev => ({ ...prev, posterUrl: e.target.value }))}
-            placeholder="https://..."
-          />
-        </div>
-
-        {/* ── Scheda di lettura PDF ─────────────────────────────────────── */}
-        <div className="border rounded-lg p-4 space-y-2 bg-muted/30">
-          <h3 className="font-semibold text-sm">Scheda di lettura PDF</h3>
-          {film?.bolId ? (
-            <div className="flex items-center gap-3 flex-wrap">
-              <span className="text-sm text-muted-foreground">
-                {schedaPresente === null ? '…' : schedaPresente ? '✅ Scheda presente' : '⚪ Nessuna scheda caricata'}
-              </span>
-              <input
-                ref={schedaInputRef}
-                type="file"
-                accept=".pdf"
-                className="hidden"
-                onChange={handleSchedaUpload}
-              />
+      {/* ── Scheda di lettura PDF ───────────────────────────────────────────── */}
+      <div className="border rounded-lg p-4 space-y-2 bg-muted/30">
+        {film?.bolId ? (
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="text-sm text-muted-foreground">
+              {schedaPresente === null ? '…' : schedaPresente ? '✅ Scheda PDF presente' : '⚪ Nessuna scheda caricata'}
+            </span>
+            <input
+              ref={schedaInputRef}
+              type="file"
+              accept=".pdf"
+              className="hidden"
+              onChange={handleSchedaUpload}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={schedaLoading}
+              onClick={() => schedaInputRef.current?.click()}
+            >
+              {schedaLoading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Upload className="h-3 w-3 mr-1" />}
+              Carica PDF
+            </Button>
+            {schedaPresente && (
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
                 disabled={schedaLoading}
-                onClick={() => schedaInputRef.current?.click()}
+                onClick={handleSchedaDelete}
               >
-                {schedaLoading ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Upload className="h-3 w-3 mr-1" />}
-                Carica PDF
+                <Trash2 className="h-3 w-3 mr-1" />
+                Rimuovi
               </Button>
-              {schedaPresente && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={schedaLoading}
-                  onClick={handleSchedaDelete}
-                >
-                  <Trash2 className="h-3 w-3 mr-1" />
-                  Rimuovi
-                </Button>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">
-              Associa un bolId al film per caricare la scheda.
-            </p>
-          )}
-        </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Associa un bolId al film per caricare la scheda.
+          </p>
+        )}
+      </div>
 
-        {/* ── Sezione MyMovies ─────────────────────────────────────────── */}
-        <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-          <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-sm">Dati MyMovies</h3>
+      {/* ── MyMovies ────────────────────────────────────────────────────────── */}
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={handleMyMoviesSearch}
+        disabled={mmState.phase === 'searching' || mmSaving}
+      >
+        {mmState.phase === 'searching'
+          ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Ricerca…</>
+          : <><Search className="h-3 w-3 mr-1" />Cerca su MyMovies</>
+        }
+      </Button>
+
+      {mmState.phase === 'unavailable' && (
+        <p className="text-sm text-muted-foreground">
+          MyMovies non è raggiungibile. I campi restano modificabili manualmente.
+        </p>
+      )}
+
+      {mmState.phase === 'no-results' && (
+        <p className="text-sm text-muted-foreground">
+          Nessun risultato su MyMovies. Inserisci i dati manualmente.
+        </p>
+      )}
+
+      {mmState.phase === 'results' && (
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground mb-1">Seleziona un risultato:</p>
+          <ul className="divide-y rounded border bg-background max-h-48 overflow-y-auto">
+            {mmState.list.map((r) => (
+              <li key={r.url}>
+                <button
+                  type="button"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
+                  onClick={() => setMmState({ phase: 'preview', result: r })}
+                >
+                  <span className="font-medium">{r.title}</span>
+                  <span className="text-muted-foreground ml-2">({r.year})</span>
+                  {r.director && <span className="text-muted-foreground ml-2">— {r.director}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {mmState.phase === 'preview' && (
+        <div className="rounded border bg-background px-3 py-2 space-y-1 text-sm">
+          <p><span className="font-medium">{mmState.result.title}</span> ({mmState.result.year})</p>
+          {mmState.result.director && (
+            <p className="text-muted-foreground">Regia: {mmState.result.director}</p>
+          )}
+          <p className="text-xs text-muted-foreground break-all">{mmState.result.url}</p>
+          <div className="flex gap-2 pt-1">
+            <Button
+              type="button"
+              size="sm"
+              onClick={() => handleMyMoviesConfirm(mmState.result)}
+              disabled={mmSaving}
+            >
+              {mmSaving
+                ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Salvataggio…</>
+                : <><Check className="h-3 w-3 mr-1" />Usa questi dati</>
+              }
+            </Button>
             <Button
               type="button"
               variant="outline"
               size="sm"
-              onClick={handleMyMoviesSearch}
-              disabled={mmState.phase === 'searching' || mmSaving}
+              onClick={() => setMmState({ phase: 'idle' })}
+              disabled={mmSaving}
             >
-              {mmState.phase === 'searching'
-                ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Ricerca…</>
-                : <><Search className="h-3 w-3 mr-1" />Cerca su MyMovies</>
-              }
+              Annulla
             </Button>
           </div>
-
-          {/* ── Feedback UI MyMovies ─────────────────────────────────── */}
-          {mmState.phase === 'unavailable' && (
-            <p className="text-sm text-muted-foreground">
-              MyMovies non è raggiungibile. I campi restano modificabili manualmente.
-            </p>
-          )}
-
-          {mmState.phase === 'no-results' && (
-            <p className="text-sm text-muted-foreground">
-              Nessun risultato su MyMovies. Inserisci i dati manualmente.
-            </p>
-          )}
-
-          {mmState.phase === 'results' && (
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground mb-1">Seleziona un risultato:</p>
-              <ul className="divide-y rounded border bg-background max-h-48 overflow-y-auto">
-                {mmState.list.map((r) => (
-                  <li key={r.url}>
-                    <button
-                      type="button"
-                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
-                      onClick={() => setMmState({ phase: 'preview', result: r })}
-                    >
-                      <span className="font-medium">{r.title}</span>
-                      <span className="text-muted-foreground ml-2">({r.year})</span>
-                      {r.director && <span className="text-muted-foreground ml-2">— {r.director}</span>}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {mmState.phase === 'preview' && (
-            <div className="rounded border bg-background px-3 py-2 space-y-1 text-sm">
-              <p><span className="font-medium">{mmState.result.title}</span> ({mmState.result.year})</p>
-              {mmState.result.director && (
-                <p className="text-muted-foreground">Regia: {mmState.result.director}</p>
-              )}
-              <p className="text-xs text-muted-foreground break-all">{mmState.result.url}</p>
-              <div className="flex gap-2 pt-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => handleMyMoviesConfirm(mmState.result)}
-                  disabled={mmSaving}
-                >
-                  {mmSaving
-                    ? <><Loader2 className="h-3 w-3 mr-1 animate-spin" />Salvataggio…</>
-                    : <><Check className="h-3 w-3 mr-1" />Usa questi dati</>
-                  }
-                </Button>
-                {/* Torna all'idle */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setMmState({ phase: 'idle' })}
-                  disabled={mmSaving}
-                >
-                  Annulla
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* ── Campi editabili MyMovies ─────────────────────────────── */}
-          <div className="space-y-3">
-            <div>
-              <Label htmlFor="myMoviesUrl">URL MyMovies</Label>
-              <Input
-                id="myMoviesUrl"
-                value={formData.myMoviesUrl}
-                onChange={(e) => setFormData(prev => ({ ...prev, myMoviesUrl: e.target.value }))}
-                placeholder="https://www.mymovies.it/film/ANNO/slug/"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="director">Regista</Label>
-              <Input
-                id="director"
-                value={formData.director}
-                onChange={(e) => setFormData(prev => ({ ...prev, director: e.target.value }))}
-                placeholder="Nome del regista"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="genre">Genere</Label>
-              <Input
-                id="genre"
-                value={formData.genre}
-                onChange={(e) => setFormData(prev => ({ ...prev, genre: e.target.value }))}
-                placeholder="Es. Biografico, Drammatico, Storico"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="italianReleaseDate">
-                Uscita italiana{' '}
-                {formData.italianReleaseDate && (
-                  <span className="text-muted-foreground font-normal">
-                    ({formatDateDisplay(formData.italianReleaseDate)})
-                  </span>
-                )}
-              </Label>
-              <Input
-                id="italianReleaseDate"
-                type="date"
-                value={formData.italianReleaseDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, italianReleaseDate: e.target.value }))}
-              />
-            </div>
-          </div>
         </div>
+      )}
+
+      {/* URL MyMovies */}
+      <div>
+        <Label htmlFor="myMoviesUrl">URL MyMovies</Label>
+        <Input
+          id="myMoviesUrl"
+          value={formData.myMoviesUrl}
+          onChange={(e) => setFormData(prev => ({ ...prev, myMoviesUrl: e.target.value }))}
+          placeholder="https://www.mymovies.it/film/ANNO/slug/"
+        />
       </div>
 
-      <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
-          <X className="h-4 w-4 mr-2" />
-          Annulla
-        </Button>
-        <Button type="submit" disabled={loading}>
-          <Save className="h-4 w-4 mr-2" />
-          {loading ? 'Salvataggio...' : film ? 'Salva Modifiche' : 'Crea Film'}
-        </Button>
+      {/* Note */}
+      <div>
+        <Label htmlFor="notes">Note</Label>
+        <Textarea
+          id="notes"
+          value={formData.notes}
+          onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+          placeholder="Note aggiuntive"
+          rows={2}
+        />
       </div>
+
     </form>
   )
 }

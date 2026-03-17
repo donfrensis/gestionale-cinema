@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { authOptions } from '@/lib/auth-options';
 import Image from 'next/image';
 import NotificationIconButton from '@/components/ui/NotificationIconButton';
+import { Toaster } from '@/components/ui/toaster';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -59,6 +60,7 @@ export default async function AvailabilityLayout({
       <main className="p-4 mt-16 pb-20">
         {children}
       </main>
+      <Toaster />
     </div>
   )
 }

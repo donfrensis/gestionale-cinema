@@ -656,7 +656,7 @@ function parseCartelloneHtml(html: string): BolCartelloneRow[] {
     const [, dd, mm, yyyy, hh, min] = dateMatch;
     const datetime = new Date(`${yyyy}-${mm}-${dd}T${hh}:${min}:00`);
 
-    const parseNum = (s: string) => parseFloat(s.replace(',', '.')) || 0;
+    const parseNum = (s: string) => parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
 
     rows.push({
       datetime,
@@ -718,7 +718,7 @@ function parseAbbonnamentiHtml(html: string): BolCartelloneRow[] {
     // Attesi almeno 7 campi: emessi annullati venduti imponibile iva totale prevendita
     if (parts.length < 7) continue;
 
-    const parseNum = (s: string) => parseFloat(s.replace(',', '.')) || 0;
+    const parseNum = (s: string) => parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
 
     rows.push({
       datetime,
@@ -766,6 +766,10 @@ function parseIncassiHtml(html: string): BolTicketData {
         // Estrai le righe della tabella
         const lines = text.split('\n');
         
+        /** Converte un numero in formato italiano ("1.234,56") in float */
+        const parseBolNumber = (s: string): number =>
+          parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+
         for (const line of lines) {
           // Cerca la riga dei BIGLIETTI
           if (line.trim().startsWith('BIGLIETTI')) {
@@ -773,26 +777,26 @@ function parseIncassiHtml(html: string): BolTicketData {
             if (parts.length >= 7) {
               // Formato: BIGLIETTI X X X IMPORTO IMPORTO TOTALE IMPORTO
               ticketCount = parseInt(parts[3]) || 0;
-              ticketTotal = parseFloat(parts[6].replace(',', '.')) || 0;
+              ticketTotal = parseBolNumber(parts[6]);
             }
           }
-          
+
           // Cerca la riga degli ABBONAMENTI
           else if (line.trim().startsWith('ABBONAMENTI')) {
             const parts = line.trim().split(/\s+/);
             if (parts.length >= 7) {
               // Formato: ABBONAMENTI X X X IMPORTO IMPORTO TOTALE IMPORTO
               subscriptionCount = parseInt(parts[3]) || 0;
-              subscriptionTotal = parseFloat(parts[6].replace(',', '.')) || 0;
+              subscriptionTotal = parseBolNumber(parts[6]);
             }
           }
-          
+
           // Cerca la riga dei TOTALI COMPLESSIVI
           else if (line.trim().startsWith('TOTALI COMPLESSIVI')) {
             const parts = line.trim().split(/\s+/);
             if (parts.length >= 7) {
               // Questa è una verifica aggiuntiva, ma possiamo anche calcolare il totale
-              const totalAmount = parseFloat(parts[6].replace(',', '.')) || 0;
+              const totalAmount = parseBolNumber(parts[6]);
               // Se abbiamo già i totali parziali, questo dovrebbe essere la somma
               if (Math.abs((ticketTotal + subscriptionTotal) - totalAmount) > 0.01) {
                 // totale non quadra, ma continuiamo comunque
