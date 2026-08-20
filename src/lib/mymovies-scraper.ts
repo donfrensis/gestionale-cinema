@@ -2,41 +2,34 @@
 //
 // Utility di scraping per MyMovies.it — SOLO lato server.
 //
-// ── SCOPERTA DELL'URL DI RICERCA ─────────────────────────────────────────────
-// Verifica preliminare eseguita il 2025-02-24:
-//   curl -s "https://www.mymovies.it/database/" | grep -i "action|method|form"
-//     → nessun output: il form è gestito via JavaScript, non come GET classico.
-//   curl -s -G "https://www.mymovies.it/database/" --data-urlencode "titolo=oppenheimer" | grep "film/20"
-//     → solo link a /film/2024/, /film/2023/…  (pagine annuali, non risultati)
-//   curl -s "https://www.mymovies.it/film/cerca/?q=oppenheimer" | grep "film/20"
-//     → la pagina esiste ma restituisce un 404 HTML, i risultati reali
-//       vengono caricati via XHR dal frontend Angular.
+// ── AGGIORNAMENTO 2025 ───────────────────────────────────────────────────────
+// L'endpoint XHR originale (/ricerca/ricerca.php?limit=true&q=TITOLO) non è
+// più disponibile (risponde 400). MyMovies ha migrato la ricerca su una pagina
+// HTML server-side accessibile via GET:
 //
-// Analizzando il JavaScript della pagina cerca/, si trova l'endpoint reale:
-//   https://www.mymovies.it/ricerca/ricerca.php?limit=true&q=TITOLO
-// che restituisce JSON con struttura { esito, risultati: { film: { elenco } } }.
-// Ogni elemento elenco ha: titolo, url, descrizione ("ANNO - Regista"), bgcolor.
-// Gli elementi con bgcolor="#d1d1d1" sono sponsorizzati e vengono scartati.
+//   https://www.mymovies.it/ricerca/avanzata/?titolo=TITOLO&ordina_per=rank&ordina_dir=desc
+//
+// Struttura della pagina risultati:
+//   - Tutti i film sono in una singola colonna (.mm-col), elencati come div fratelli
+//   - Ogni film ha un div "ancora" con id="poster-div-N" (il poster)
+//   - Il div con titolo e testo è il fratello successivo con classe "mm-white mm-padding-8"
+//   - I risultati sono ordinati per rank MyMovies (non per similarità al titolo cercato)
+//     → lo script ri-ordina i risultati mettendo prima i match più simili al titolo
 //
 // ── STRUTTURA PAGINA FILM ────────────────────────────────────────────────────
 // URL: https://www.mymovies.it/film/ANNO/SLUG/
-// La pagina è HTML statico (no JS rendering necessario).
-// Dati estratti da una <table> con righe <tr><td>label</td><td>valore</td></tr>:
-//
-//   Regista   → riga con testo "Regia di", valore è <a href="/persone/...">Nome</a>
-//   Uscita IT → riga con testo "Uscita", valore ha due <a>:
-//               es. "mercoledì 23"  e  "agosto 2023"
-//   Genere    → riga con testo "Genere", testo libero con virgola finale
-//               es. "Biografico, Drammatico, Storico,"
+// Invariata: dati estratti da <table> con righe <tr><td>label</td><td>valore</td></tr>.
 //
 // ── AGGIORNAMENTO SELETTORI ──────────────────────────────────────────────────
 // Se MyMovies cambia layout, aggiornare le costanti qui sotto:
 
-/** URL base dell'API di ricerca (endpoint XHR scoperto analizzando il JS del sito) */
-const SEARCH_API_URL = 'https://www.mymovies.it/ricerca/ricerca.php'
+/** URL base della pagina di ricerca avanzata */
+const SEARCH_BASE_URL = 'https://www.mymovies.it/ricerca/avanzata/'
 
 /** Pattern che identifica una pagina film valida (film/ANNO/SLUG/) */
 const FILM_URL_PATTERN = /^https:\/\/www\.mymovies\.it\/film\/\d{4}\/[^/]+\/$/
+
+/** Classe CSS del div fratello del poster che contiene titolo e testo del film */
 
 /** Testo del label della riga "Regista" nella tabella dettagli */
 const LABEL_REGIA = 'Regia di'
@@ -59,7 +52,7 @@ export interface MyMoviesSearchResult {
   title: string
   year: string
   director: string
-  url: string  // URL completo della pagina film, es. https://www.mymovies.it/film/2023/oppenheimer/
+  url: string
 }
 
 export interface MyMoviesDetail {
@@ -76,13 +69,7 @@ const ITALIAN_MONTHS: Record<string, number> = {
   settembre: 9, ottobre: 10, novembre: 11, dicembre: 12,
 }
 
-/**
- * Converte una stringa di data italiana (es. "mercoledì 23 agosto 2023")
- * in un oggetto Date (mezzanotte UTC).
- * Restituisce null se il parsing fallisce.
- */
 function parseItalianDate(raw: string): Date | null {
-  // Cerca pattern: uno o più numeri, spazio, nome mese, spazio, anno a 4 cifre
   const match = raw.match(/(\d+)\s+([a-zà-ú]+)\s+(\d{4})/i)
   if (!match) return null
   const day = parseInt(match[1], 10)
@@ -90,59 +77,101 @@ function parseItalianDate(raw: string): Date | null {
   const year = parseInt(match[3], 10)
   const month = ITALIAN_MONTHS[monthName]
   if (!month) return null
-  // Date UTC per evitare shift di fuso orario
   return new Date(Date.UTC(year, month - 1, day))
 }
 
 /**
- * Cerca film su MyMovies tramite l'API XHR.
+ * Calcola un punteggio di similarità tra titolo risultato e query di ricerca.
+ * Punteggio più alto = più rilevante. Usato per ri-ordinare i risultati MyMovies
+ * che di default sono ordinati per rank del sito, non per somiglianza al titolo.
+ *
+ * Priorità (dal più alto al più basso):
+ *   3 — titolo esattamente uguale alla query (case-insensitive)
+ *   2 — titolo inizia con la query
+ *   1 — la query è contenuta all'inizio del titolo dopo articoli ("il", "la", "l'", "the", "der", "le")
+ *   0 — match parziale generico
+ */
+function titleSimilarityScore(title: string, query: string): number {
+  const t = title.toLowerCase().trim()
+  const q = query.toLowerCase().trim()
+  if (t === q) return 3
+  if (t.startsWith(q)) return 2
+  // rimuovi articolo iniziale dal titolo e confronta
+  const withoutArticle = t.replace(/^(il|la|lo|gli|le|l'|i|un|una|the|der|le|les)\s+/i, '')
+  if (withoutArticle.startsWith(q)) return 1
+  return 0
+}
+
+/**
+ * Cerca film su MyMovies tramite la pagina di ricerca avanzata (HTML).
+ * I risultati vengono ri-ordinati per somiglianza al titolo cercato.
  * Non lancia eccezioni: in caso di errore restituisce array vuoto.
  */
 export async function searchMyMovies(title: string): Promise<MyMoviesSearchResult[]> {
   try {
-    const url = `${SEARCH_API_URL}?limit=true&q=${encodeURIComponent(title)}`
+    const params = new URLSearchParams({
+      titolo: title,
+      ordina_per: 'rank',
+      ordina_dir: 'desc',
+    })
+    const url = `${SEARCH_BASE_URL}?${params.toString()}`
+
     const res = await fetch(url, {
       headers: { 'User-Agent': USER_AGENT },
-      // next.js: non cachare le ricerche
       cache: 'no-store',
     })
     if (!res.ok) return []
 
-    const json = await res.json() as {
-      esito: string
-      risultati?: {
-        film?: {
-          elenco?: Array<{
-            titolo: string
-            url: string
-            descrizione: string
-            bgcolor: string
-          }>
-        }
+    const html = await res.text()
+    const root = parseHtml(html)
+    const results: MyMoviesSearchResult[] = []
+    const seen = new Set<string>()
+
+    // I film sono in una lista piatta di div fratelli.
+    // Ogni film ha un div ancora con id="poster-div-N".
+    // Il div con titolo e testo è il fratello successivo con classe INFO_DIV_CLASS.
+    const posterDivs = root.querySelectorAll('[id^="poster-div-"]')
+
+    for (const posterDiv of posterDivs) {
+      // URL del film: dal link immagine nel poster
+      const posterLink = posterDiv.querySelector('a[href*="/film/"]')
+      const filmUrl = posterLink?.getAttribute('href') ?? ''
+      if (!FILM_URL_PATTERN.test(filmUrl) || seen.has(filmUrl)) continue
+      seen.add(filmUrl)
+
+      const yearMatch = filmUrl.match(/\/film\/(\d{4})\//)
+      const year = yearMatch?.[1] ?? ''
+
+      // Trova il div fratello con il testo del film (titolo, regista, ecc.)
+      let infoNode = posterDiv.nextElementSibling
+      for (let i = 0; i < 5; i++) {
+        if (!infoNode) break
+        const cls = infoNode.classNames ?? infoNode.getAttribute?.('class') ?? ''
+        if (cls.includes('mm-white') && cls.includes('mm-padding-8')) break
+        infoNode = infoNode.nextElementSibling
+      }
+
+      const titleLink = infoNode?.querySelector(`a[href="${filmUrl}"]`)
+                     ?? infoNode?.querySelector('a[href*="/film/"]')
+      const titleRaw = titleLink?.text.trim() ?? ''
+      // MyMovies mostra i titoli in MAIUSCOLO nella lista
+      const titleText = titleRaw.length > 0
+        ? titleRaw.charAt(0).toUpperCase() + titleRaw.slice(1).toLowerCase()
+        : ''
+
+      const blockText = infoNode?.text ?? ''
+      const dirMatch = blockText.match(/Un film di ([^.]+)\./i)
+      const director = dirMatch?.[1]?.trim() ?? ''
+
+      if (titleText && filmUrl) {
+        results.push({ title: titleText, year, director, url: filmUrl })
       }
     }
 
-    if (json.esito !== 'SUCCESS') return []
-
-    const elenco = json.risultati?.film?.elenco ?? []
-    const results: MyMoviesSearchResult[] = []
-
-    for (const item of elenco) {
-      // Scarta elementi sponsorizzati (bgcolor grigio) e link non-film
-      if (item.bgcolor === '#d1d1d1') continue
-      if (!FILM_URL_PATTERN.test(item.url)) continue
-
-      // descrizione ha formato "ANNO - Nome Regista"
-      const [year = '', ...dirParts] = item.descrizione.split(' - ')
-      const director = dirParts.join(' - ').trim()
-
-      results.push({
-        title: item.titolo,
-        year: year.trim(),
-        director,
-        url: item.url,
-      })
-    }
+    // Ri-ordina: match esatti prima, poi parziali, mantenendo rank MyMovies come tiebreaker
+    results.sort((a, b) =>
+      titleSimilarityScore(b.title, title) - titleSimilarityScore(a.title, title)
+    )
 
     return results
   } catch {
@@ -151,11 +180,10 @@ export async function searchMyMovies(title: string): Promise<MyMoviesSearchResul
 }
 
 /**
- * Recupera regista e data uscita italiana dalla pagina film di MyMovies.
+ * Recupera regista, data uscita italiana e genere dalla pagina film di MyMovies.
  * Non lancia eccezioni: i campi non trovati vengono restituiti come null.
  */
 export async function fetchMyMoviesDetail(url: string): Promise<MyMoviesDetail> {
-  // Normalizza URL: assicura che termini con /
   const normalizedUrl = url.endsWith('/') ? url : url + '/'
 
   const base: MyMoviesDetail = {
@@ -175,7 +203,6 @@ export async function fetchMyMoviesDetail(url: string): Promise<MyMoviesDetail> 
     const html = await res.text()
     const root = parseHtml(html)
 
-    // Cerca tutte le righe <tr> della tabella dettagli
     const rows = root.querySelectorAll('tr')
 
     for (const row of rows) {
@@ -184,23 +211,17 @@ export async function fetchMyMoviesDetail(url: string): Promise<MyMoviesDetail> 
       const label = cells[0].text.trim()
 
       if (label === LABEL_REGIA && base.director === null) {
-        // Possono esserci più registi: <a>Luc Dardenne</a>, <a>Jean-Pierre Dardenne</a>
         const links = cells[1].querySelectorAll('a')
         const names = links.map(a => a.text.trim()).filter(Boolean).join(', ')
         base.director = names || null
       }
 
       if (label === LABEL_USCITA && base.italianReleaseDate === null) {
-        // Usa il testo completo della cella: "agosto 2023" può stare fuori dai tag <a>
-        // es. HTML reale: <a>mercoledì 23</a> <a></a>agosto 2023
-        const dateText = cells[1].text.trim()
-        base.italianReleaseDate = parseItalianDate(dateText)
+        base.italianReleaseDate = parseItalianDate(cells[1].text.trim())
       }
 
       if (label === LABEL_GENERE && base.genre === null) {
-        // MyMovies restituisce "Biografico, Drammatico, Storico," con virgola finale
         const raw = cells[1].text.trim()
-        // Rimuove la virgola finale e normalizza gli spazi
         base.genre = raw.replace(/,\s*$/, '').trim() || null
       }
     }
