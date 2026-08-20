@@ -40,11 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# File temporanei/helper
-helper_ssl
-helper_ssl.tar.gz
-rbot
-
 # PWA generated files
 public/sw.js
 public/workbox-*.js
