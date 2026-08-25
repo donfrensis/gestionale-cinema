@@ -5,6 +5,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
         NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+        VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
         DATABASE_URL: ${BUILD_DATABASE_URL}
     image: gestionale-cinema:latest
     container_name: gestionale-cinema
