@@ -4,6 +4,10 @@ import withPWA from "@ducanh2912/next-pwa";
 // @ts-check
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // next-pwa (@ducanh2912/next-pwa) inietta un plugin webpack: la build di produzione
+  // usa --webpack (vedi package.json); questa chiave silenzia solo il warning di
+  // next dev, che usa comunque Turbopack (PWA è disabilitato in dev).
+  turbopack: {},
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'www.mymovies.it' },
