@@ -1,0 +1,49 @@
+services:
+  gestionale-cinema:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+        DATABASE_URL: ${DATABASE_URL}
+    image: gestionale-cinema:latest
+    container_name: gestionale-cinema
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      TZ: ${TZ}
+      DATABASE_URL: ${DATABASE_URL}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET}
+      AUTH_SECRET: ${AUTH_SECRET}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      SUMUP_MERCHANT_CODE: ${SUMUP_MERCHANT_CODE}
+      SUMUP_API_KEY: ${SUMUP_API_KEY}
+      BOL_USERNAME: ${BOL_USERNAME}
+      BOL_PASSWORD: ${BOL_PASSWORD}
+      BOL_BASE_URL: ${BOL_BASE_URL}
+      MAILCHIMP_API_KEY: ${MAILCHIMP_API_KEY}
+      MAILCHIMP_AUDIENCE_ID: ${MAILCHIMP_AUDIENCE_ID}
+      MAILCHIMP_SERVER_PREFIX: ${MAILCHIMP_SERVER_PREFIX}
+      MAILCHIMP_TEMPLATE_ID: ${MAILCHIMP_TEMPLATE_ID}
+    ports:
+      - "${BIND_IP}:${APP_PORT}:3000"
+    volumes:
+      - "${POSTERS_PATH}:/app/public/posters"
+      - "${SCHEDE_PATH}:/app/public/schede"
+    networks:
+      - db
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/login"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    labels:
+      # immagine buildata in locale: watchtower non deve provare ad aggiornarla
+      com.centurylinklabs.watchtower.enable: "false"
+
+networks:
+  db:
+    external: true
+    name: db

@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.env*
+public/posters
+public/schede
+*.tsbuildinfo
+.vscode
+README.md
