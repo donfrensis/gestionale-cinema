@@ -7,7 +7,14 @@ self.addEventListener('activate', (event) => {
 })
 
 self.addEventListener('push', (event) => {
-  const data = event.data?.json() ?? {}
+  // Il gestionale invia sempre JSON; un payload di testo semplice (es. test da
+  // DevTools) diventa comunque una notifica invece di un errore silenzioso.
+  let data = {}
+  try {
+    data = event.data?.json() ?? {}
+  } catch {
+    data = { body: event.data?.text() }
+  }
   const title = data.title ?? 'Cinema Everest Galluzzo'
   const options = {
     body: data.body ?? 'Nuova programmazione disponibile!',

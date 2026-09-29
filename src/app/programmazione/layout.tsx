@@ -11,11 +11,11 @@ const robotoMono = Roboto_Mono({
 
 export const metadata: Metadata = {
   title: 'Programmazione Cinema Everest Galluzzo',
-  description: 'La programmazione settimanale del Cinema Everest del Galluzzo. Ci vediamo al  📽🏔🐓  !!!',
+  description: 'Orari, schede dei film e avvisi dal nostro cinema direttamente sul telefono. Ci vediamo al 📽🏔🐓 !!!',
   openGraph: {
     title: 'Programmazione Cinema Everest Galluzzo',
-    description: 'La programmazione settimanale del Cinema Everest del Galluzzo . Ci vediamo al  📽🏔🐓  !!!',
-    url: 'https://cinema.everestgalluzzo.it',
+    description: 'Orari, schede dei film e avvisi dal nostro cinema direttamente sul telefono. Ci vediamo al 📽🏔🐓 !!!',
+    url: 'https://cinema.everestgalluzzo.it/programmazione',
     siteName: 'Cinema Everest Galluzzo',
     locale: 'it_IT',
     type: 'website',
