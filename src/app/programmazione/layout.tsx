@@ -11,6 +11,16 @@ const robotoMono = Roboto_Mono({
 
 export const metadata: Metadata = {
   title: 'Programmazione Cinema Everest Galluzzo',
+  // manifest e appleWebApp vanno dichiarati QUI nei metadata: altrimenti la pagina
+  // eredita dal layout radice il manifest dei volontari (/manifest.json, start_url
+  // /availability) e su iPhone "Aggiungi alla schermata Home" installa l'app volontari
+  // (apertura sul login) invece della programmazione pubblica.
+  manifest: '/manifest-public.json',
+  appleWebApp: {
+    capable: true,
+    title: 'Cinema Everest',
+    statusBarStyle: 'black-translucent',
+  },
   description: 'Orari, schede dei film e avvisi dal nostro cinema direttamente sul telefono. Ci vediamo al 📽🏔🐓 !!!',
   openGraph: {
     title: 'Programmazione Cinema Everest Galluzzo',
@@ -28,9 +38,6 @@ export default function ProgrammazioneLayout({ children }: { children: React.Rea
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <meta name="theme-color" content="#0a1628" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <link rel="manifest" href="/manifest-public.json" />
         {process.env.NEXT_PUBLIC_UMAMI_URL && process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID && (
           <script
             defer
